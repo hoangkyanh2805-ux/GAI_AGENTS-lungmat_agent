@@ -27,6 +27,7 @@ const SCRIPT_CMDS = {
   'db:seed':         'ts-node db/seed.ts',
   'db:test-log':     'ts-node db/test-log.ts',
   'test:e2e-local':  'ts-node scripts/e2e-local.ts',
+  'install':         null,  // handled separately — runs npm install directly
 };
 
 const scriptName = process.argv[2];
@@ -37,7 +38,7 @@ if (!scriptName) {
   process.exit(1);
 }
 
-if (!SCRIPT_CMDS[scriptName]) {
+if (!(scriptName in SCRIPT_CMDS)) {
   console.error(`[runtime.js] Unknown script: ${scriptName}`);
   process.exit(1);
 }
@@ -59,8 +60,12 @@ if (sync.status !== null && sync.status >= 8) {
 }
 
 // Run the script from the C: runtime where node_modules exists
-console.log(`[runtime.js] Running: npx ${SCRIPT_CMDS[scriptName]} in ${RUNTIME}\n`);
-const run = spawnSync(`npx ${SCRIPT_CMDS[scriptName]}`, [], {
+const cmd = SCRIPT_CMDS[scriptName] === null
+  ? 'npm install'
+  : `npx ${SCRIPT_CMDS[scriptName]}`;
+
+console.log(`[runtime.js] Running: ${cmd} in ${RUNTIME}\n`);
+const run = spawnSync(cmd, [], {
   cwd: RUNTIME,
   stdio: 'inherit',
   shell: true,

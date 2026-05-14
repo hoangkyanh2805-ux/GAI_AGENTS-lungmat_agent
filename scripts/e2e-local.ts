@@ -101,7 +101,8 @@ function cmd(
 
 // ── Test suite ────────────────────────────────────────────────────────────────
 
-let lastTraceId = '';
+let lastTraceId   = '';
+let lastApprovalId = '';
 
 const CASES: Case[] = [
   // ── Health ──────────────────────────────────────────────────────────────────
@@ -160,7 +161,7 @@ const CASES: Case[] = [
       return { passed: r.status === 200 && r.body.status === 'success' };
     },
   },
-  // ── Trace response includes trace_id ─────────────────────────────────────────
+  // ── Trace ────────────────────────────────────────────────────────────────────
   {
     name: 'Response includes trace_id',
     async run() {
@@ -172,11 +173,10 @@ const CASES: Case[] = [
       return { passed: id, detail: id ? undefined : 'trace_id missing from response' };
     },
   },
-  // ── Trace store (GET /trace/:id) ─────────────────────────────────────────────
   {
     name: 'GET /trace/:id → 200 with steps array',
     async run() {
-      if (!lastTraceId) return { passed: false, detail: 'no trace_id captured from prior test' };
+      if (!lastTraceId) return { passed: false, detail: 'no trace_id captured' };
       const r = await httpRequest('GET', `/trace/${lastTraceId}`, AUTH);
       const ok =
         r.status === 200 &&
@@ -190,6 +190,159 @@ const CASES: Case[] = [
     async run() {
       const r = await httpRequest('GET', '/trace/00000000-0000-0000-0000-000000000000', AUTH);
       return { passed: r.status === 404 };
+    },
+  },
+
+  // ── Phase 3: ResearchAgent ────────────────────────────────────────────────────
+  cmd('POST /research → 200 success [ResearchAgent]', '/research',
+    { expectBody: (b) => b.status === 'success' && String(b.reply ?? '').includes('Research') }),
+
+  // ── Phase 3: MarketSummaryAgent ───────────────────────────────────────────────
+  cmd('POST /market_summary → 200 success [MarketSummaryAgent]', '/market_summary',
+    { expectBody: (b) => b.status === 'success' }),
+
+  // ── Phase 3: RAGAgent — ingest ────────────────────────────────────────────────
+  {
+    name: 'POST /rag_ingest → 200 success [RAGAgent]',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/rag_ingest', user: 'e2e', source: 'e2e',
+        payload: { title: 'E2E Test Doc', content: 'This document contains test content about AI trends and markets.', source: 'e2e', tags: ['test', 'ai'] },
+      });
+      const passed = r.status === 200 && r.body.status === 'success';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+
+  // ── Phase 3: RAGAgent — search ────────────────────────────────────────────────
+  {
+    name: 'POST /rag_search → 200 results [RAGAgent]',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/rag_search', user: 'e2e', source: 'e2e',
+        payload: { query: 'AI trends', limit: 5 },
+      });
+      const passed = r.status === 200 && r.body.status === 'success';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+
+  // ── Phase 3: REST — GET /rag/search ──────────────────────────────────────────
+  {
+    name: 'GET /rag/search?q=AI → 200 results',
+    async run() {
+      const r = await httpRequest('GET', '/rag/search?q=AI', AUTH);
+      const passed = r.status === 200 && r.body.status === 'success';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+
+  // ── Phase 3: REST — POST /ingest ─────────────────────────────────────────────
+  {
+    name: 'POST /ingest → 200 doc ingested',
+    async run() {
+      const r = await httpRequest('POST', '/ingest', AUTH, {
+        title: 'REST Ingest Test', content: 'Content ingested via REST endpoint for testing.', source: 'rest_test', tags: ['test'],
+      });
+      const passed = r.status === 200 && r.body.status === 'success' && typeof (r.body.doc as JsonBody)?.id === 'string';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+
+  // ── Phase 3: ThreadWriterAgent + approval flow ────────────────────────────────
+  {
+    name: 'POST /write_thread → 200, returns approval_id [ThreadWriterAgent]',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/write_thread', user: 'e2e', source: 'e2e',
+        payload: { topic: 'AI startup trends' },
+      });
+      const meta = r.body.meta as JsonBody | undefined;
+      const id = meta?.approval_id as string | undefined;
+      if (id) lastApprovalId = id;
+      const passed = r.status === 200 && r.body.status === 'success' && !!id;
+      return { passed, detail: passed ? undefined : `no approval_id in: ${JSON.stringify(r.body).slice(0, 200)}` };
+    },
+  },
+  {
+    name: 'GET /approval → 200 list [REST]',
+    async run() {
+      const r = await httpRequest('GET', '/approval?status=pending', AUTH);
+      const passed = r.status === 200 && r.body.status === 'success';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+  {
+    name: 'POST /approval/:id/approve → 200 approved [REST]',
+    async run() {
+      if (!lastApprovalId) return { passed: false, detail: 'no approval_id from prior test' };
+      const r = await httpRequest('POST', `/approval/${lastApprovalId}/approve`, AUTH, { reviewed_by: 'e2e_tester' });
+      const passed = r.status === 200 && r.body.status === 'success' && (r.body.approval as JsonBody)?.status === 'approved';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+  {
+    name: 'POST /publish_telegram → 200 published [TelegramPublisherAgent]',
+    async run() {
+      if (!lastApprovalId) return { passed: false, detail: 'no approval_id from prior test' };
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/publish_telegram', user: 'e2e', source: 'e2e',
+        payload: { approval_id: lastApprovalId, chat_id: 'mock_chat' },
+      });
+      const passed = r.status === 200 && r.body.status === 'success';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+
+  // ── Phase 3: DailyReportAgent (queues jobs) ───────────────────────────────────
+  {
+    name: 'POST /daily_report → 200 jobs queued [DailyReportAgent]',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/daily_report', user: 'e2e', source: 'e2e', payload: {},
+      });
+      const meta = r.body.meta as JsonBody | undefined;
+      const passed = r.status === 200 && r.body.status === 'success' && Array.isArray(meta?.job_ids);
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+
+  // ── Phase 3: REST — GET /queue ────────────────────────────────────────────────
+  {
+    name: 'GET /queue → 200 queue status [REST]',
+    async run() {
+      const r = await httpRequest('GET', '/queue', AUTH);
+      const passed = r.status === 200 && r.body.status === 'success' && typeof (r.body.summary as JsonBody)?.pending === 'number';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+
+  // ── Phase 3: OpsAgent ────────────────────────────────────────────────────────
+  cmd('POST /queue_status → 200 success [OpsAgent]', '/queue_status',
+    { expectBody: (b) => b.status === 'success' }),
+  cmd('POST /approval_list → 200 success [OpsAgent]', '/approval_list',
+    { expectBody: (b) => b.status === 'success' }),
+
+  // ── Phase 3: REST — POST /schedule ───────────────────────────────────────────
+  {
+    name: 'POST /schedule → 200 schedule created [REST]',
+    async run() {
+      const r = await httpRequest('POST', '/schedule', AUTH, {
+        name: 'E2E Test Schedule',
+        cron: '0 8 * * *',
+        job_type: 'daily_report',
+        payload: {},
+      });
+      const passed = r.status === 200 && r.body.status === 'success' && typeof (r.body.schedule as JsonBody)?.id === 'string';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+  {
+    name: 'GET /schedule → 200 schedules list [REST]',
+    async run() {
+      const r = await httpRequest('GET', '/schedule', AUTH);
+      const passed = r.status === 200 && r.body.status === 'success' && Array.isArray(r.body.schedules);
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
     },
   },
 ];

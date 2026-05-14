@@ -11,17 +11,24 @@ export type AgentRole =
   | 'sales'
   | 'support'
   | 'memory'
-  | 'safety';
+  | 'safety'
+  | 'research'
+  | 'market_summary'
+  | 'thread_writer'
+  | 'telegram_publisher'
+  | 'daily_report'
+  | 'rag'
+  | 'ops';
 
 // ── Incoming message (canonical shape for all agent inputs) ──────────────────
 export interface AgentMessage {
   id: string;
-  content: string;           // raw command string or natural language
-  command?: string;          // normalized slash command, e.g. '/help'
-  intent?: string;           // classified by RouterAgent
+  content: string;
+  command?: string;
+  intent?: string;
   payload: Record<string, unknown>;
   user: string;
-  source: string;            // 'telegram' | 'curl' | 'n8n' | 'e2e' | …
+  source: string;
   project?: string;
   chat_id?: string | number;
   timestamp: string;
@@ -52,8 +59,7 @@ export interface TraceRecord {
   duration_ms: number;
 }
 
-// ── Execution context (mutable, threaded through the agent chain) ─────────────
-// Agents call addStep() in trace/ExecutionTrace.ts to append their steps.
+// ── Execution context ─────────────────────────────────────────────────────────
 export interface ExecutionContext {
   trace_id: string;
   started_at: string;
@@ -64,7 +70,7 @@ export interface ExecutionContext {
   mock_llm: boolean;
 }
 
-// ── Sub-agent contract (all routable agents implement this) ───────────────────
+// ── Sub-agent contract ────────────────────────────────────────────────────────
 export interface SubAgent {
   readonly name: string;
   readonly role: AgentRole;
@@ -78,17 +84,17 @@ export interface AgentResponse {
   next_actions: string[];
   agent: string;
   trace_id: string;
+  meta?: Record<string, unknown>; // optional structured output (approval_id, job_ids, etc.)
 }
 
-// ── Routing decision (output of RouterAgent) ──────────────────────────────────
+// ── Routing & safety ──────────────────────────────────────────────────────────
 export interface RoutingDecision {
   target_agent: AgentRole;
   intent: string;
-  confidence: number;       // 0–1
+  confidence: number;
   fallback_agent: AgentRole;
 }
 
-// ── Safety decision (output of SafetyAgent) ───────────────────────────────────
 export type RiskLevel = 'low' | 'medium' | 'high';
 
 export interface SafetyDecision {
@@ -108,8 +114,8 @@ export interface MemoryEntry {
 }
 
 export interface MemorySetOptions {
-  ttl_ms?: number;    // L1 TTL in milliseconds
-  persist?: boolean;  // also write to L2 (default true)
+  ttl_ms?: number;
+  persist?: boolean;
   agent?: string;
 }
 
@@ -120,7 +126,7 @@ export interface ToolResult<T = unknown> {
   error?: string;
 }
 
-// ── Skill (backward-compatible with skills/ directory) ────────────────────────
+// ── Skill ─────────────────────────────────────────────────────────────────────
 export interface SkillResult {
   reply: string;
   next_actions: string[];
@@ -159,6 +165,82 @@ export interface AgentEventEntry {
   input_data?: unknown;
   output_data?: unknown;
   duration_ms?: number;
+}
+
+// ── Job queue ─────────────────────────────────────────────────────────────────
+export type JobStatus = 'pending' | 'running' | 'done' | 'failed';
+export type JobType = 'research' | 'market_summary' | 'write_thread' | 'publish' | 'daily_report';
+
+export interface Job {
+  id: string;
+  type: JobType;
+  payload: Record<string, unknown>;
+  status: JobStatus;
+  created_at: string;
+  started_at?: string;
+  finished_at?: string;
+  result?: unknown;
+  error?: string;
+  trace_id?: string;
+}
+
+// ── RAG ───────────────────────────────────────────────────────────────────────
+export interface RAGDocument {
+  id: string;
+  title: string;
+  content: string;
+  source: string;
+  tags: string[];
+  ingested_at: string;
+}
+
+export interface RAGSearchResult {
+  document: RAGDocument;
+  score: number;
+}
+
+// ── Approval ──────────────────────────────────────────────────────────────────
+export interface ApprovalRequest {
+  id: string;
+  trace_id: string;
+  type: 'publish_telegram' | 'publish_other';
+  content: string;
+  agent: string;
+  user: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+}
+
+// ── Scheduler ─────────────────────────────────────────────────────────────────
+export interface Schedule {
+  id: string;
+  name: string;
+  cron: string;
+  job_type: JobType;
+  payload: Record<string, unknown>;
+  enabled: boolean;
+  last_run?: string;
+  created_at: string;
+}
+
+// ── Research / market data ────────────────────────────────────────────────────
+export interface Article {
+  title: string;
+  url: string;
+  content: string;
+  source: string;
+  published_at?: string;
+}
+
+export interface MarketData {
+  ticker: string;
+  price: number;
+  change: number;
+  change_pct: number;
+  volume?: number;
+  timestamp: string;
 }
 
 // ── Retry ─────────────────────────────────────────────────────────────────────

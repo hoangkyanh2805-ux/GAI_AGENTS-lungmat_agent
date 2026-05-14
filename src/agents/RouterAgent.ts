@@ -2,17 +2,36 @@ import { AgentMessage, AgentRole, ExecutionContext, RoutingDecision } from '../t
 
 // Static routing table: exact command → target agent role
 const COMMAND_ROUTES: Record<string, AgentRole> = {
-  '/help':           'support',
-  '/report_today':   'support',
-  '/check_errors':   'support',
-  '/audit_pipeline': 'support',
-  '/check_pending':  'support',
-  '/create_brief':   'sales',
-  '/lead_capture':   'sales',
-  '/product_info':   'sales',
-  '/memory_store':   'memory',
-  '/memory_get':     'memory',
-  '/memory_list':    'memory',
+  // ── SupportAgent ─────────────────────────────────────────────────────────
+  '/help':              'support',
+  '/report_today':      'support',
+  '/check_errors':      'support',
+  '/audit_pipeline':    'support',
+  '/check_pending':     'support',
+  // ── SalesAgent ────────────────────────────────────────────────────────────
+  '/create_brief':      'sales',
+  '/lead_capture':      'sales',
+  '/product_info':      'sales',
+  // ── MemoryAgent ───────────────────────────────────────────────────────────
+  '/memory_store':      'memory',
+  '/memory_get':        'memory',
+  '/memory_list':       'memory',
+  // ── ResearchAgent ─────────────────────────────────────────────────────────
+  '/research':          'research',
+  // ── MarketSummaryAgent ────────────────────────────────────────────────────
+  '/market_summary':    'market_summary',
+  // ── ThreadWriterAgent ─────────────────────────────────────────────────────
+  '/write_thread':      'thread_writer',
+  // ── TelegramPublisherAgent ────────────────────────────────────────────────
+  '/publish_telegram':  'telegram_publisher',
+  // ── DailyReportAgent ─────────────────────────────────────────────────────
+  '/daily_report':      'daily_report',
+  // ── RAGAgent ─────────────────────────────────────────────────────────────
+  '/rag_search':        'rag',
+  '/rag_ingest':        'rag',
+  // ── OpsAgent ─────────────────────────────────────────────────────────────
+  '/queue_status':      'ops',
+  '/approval_list':     'ops',
 };
 
 export class RouterAgent {

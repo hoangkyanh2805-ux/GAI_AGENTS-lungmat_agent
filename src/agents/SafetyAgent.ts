@@ -7,12 +7,15 @@ import {
 } from '../types';
 import { FileLogger } from '../memory/FileLogger';
 
-// Commands that modify state — log and allow, but flag for review
-const MEDIUM_RISK = new Set(['/memory_store']);
+// Commands that modify shared state — log and allow, but flag for review
+const MEDIUM_RISK = new Set([
+  '/memory_store',
+  '/publish_telegram', // actual external publish — auditable
+]);
 
 // Commands that are destructive — always blocked, require explicit human approval
 const HIGH_RISK = new Set<string>([
-  // reserved: '/delete_all', '/approve_post', '/deploy', etc.
+  // reserved: '/delete_all', '/deploy', etc.
 ]);
 
 export class SafetyAgent {

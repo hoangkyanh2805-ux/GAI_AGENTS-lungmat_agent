@@ -67,3 +67,52 @@ CREATE TABLE IF NOT EXISTS approval_requests (
 );
 
 ALTER TABLE approval_requests DISABLE ROW LEVEL SECURITY;
+
+-- ── Phase 3: job queue ────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS jobs (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  type        TEXT        NOT NULL,
+  payload     JSONB,
+  status      TEXT        DEFAULT 'pending'
+                          CHECK (status IN ('pending', 'running', 'done', 'failed')),
+  result      JSONB,
+  error       TEXT,
+  trace_id    TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  started_at  TIMESTAMPTZ,
+  finished_at TIMESTAMPTZ
+);
+
+ALTER TABLE jobs DISABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_jobs_status
+  ON jobs (status, created_at DESC);
+
+-- ── Phase 3: RAG document store ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS rag_documents (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  title       TEXT        NOT NULL,
+  content     TEXT,
+  source      TEXT,
+  tags        TEXT[],
+  ingested_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE rag_documents DISABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_rag_documents_ingested
+  ON rag_documents (ingested_at DESC);
+
+-- ── Phase 3: scheduler config ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS schedules (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT        NOT NULL,
+  cron        TEXT        NOT NULL,
+  job_type    TEXT        NOT NULL,
+  payload     JSONB,
+  enabled     BOOLEAN     DEFAULT TRUE,
+  last_run    TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE schedules DISABLE ROW LEVEL SECURITY;

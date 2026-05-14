@@ -9,6 +9,14 @@ export const ENV = {
   NODE_ENV: process.env.NODE_ENV ?? 'development',
   SUPABASE_URL: process.env.SUPABASE_URL ?? '',
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+  // LLM — optional; falls back to mock if absent
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
+  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001',
+  // Apify — optional; falls back to mock if absent
+  APIFY_API_TOKEN: process.env.APIFY_API_TOKEN ?? '',
+  // Telegram — optional; falls back to mock if absent
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ?? '',
+  TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID ?? '',
 } as const;
 
 export function validateEnv(): void {

@@ -4,6 +4,7 @@
   "description": "Hermes-style local-first AI agent system with Supabase memory",
   "main": "dist/index.js",
   "scripts": {
+    "install:runtime": "node scripts/runtime.js install",
     "dev":            "node scripts/runtime.js dev",
     "build":          "node scripts/runtime.js build",
     "start":          "node scripts/runtime.js start",
@@ -14,15 +15,19 @@
     "test:e2e-local": "node scripts/runtime.js test:e2e-local"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.3",
     "@supabase/supabase-js": "^2.43.4",
+    "axios": "^1.7.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.12.12",
+    "@types/node-cron": "^3.0.11",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
