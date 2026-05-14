@@ -13,7 +13,7 @@ import path from 'path';
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, spawnSync, ChildProcess } from 'child_process';
 import http from 'http';
 
 const TEST_PORT = 3099;
@@ -214,7 +214,9 @@ async function main(): Promise<void> {
 
   server.stderr?.on('data', (d: Buffer) => {
     const msg = d.toString();
-    if (msg.includes('[ERROR]')) process.stderr.write(`  server: ${msg}`);
+    if (msg.includes('[ERROR]') || msg.includes('Error') || msg.includes('EADDR')) {
+      process.stderr.write(`  server: ${msg}`);
+    }
   });
 
   let exitCode = 0;
@@ -244,7 +246,12 @@ async function main(): Promise<void> {
     console.error('\n[ERROR] E2E aborted:', err);
     exitCode = 1;
   } finally {
-    server.kill('SIGTERM');
+    // On Windows, SIGTERM only kills the shell wrapper — use taskkill /T to kill the full process tree.
+    if (process.platform === 'win32' && server.pid) {
+      spawnSync('taskkill', ['/F', '/T', '/PID', String(server.pid)], { stdio: 'ignore' });
+    } else {
+      server.kill('SIGTERM');
+    }
   }
 
   process.exit(exitCode);
