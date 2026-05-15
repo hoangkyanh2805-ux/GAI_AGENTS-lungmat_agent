@@ -210,17 +210,20 @@ const CASES: Case[] = [
       return { passed, detail: passed ? undefined : `reply (no [Mock]): ${reply.slice(0, 150)}` };
     },
   },
-  // Verify ResearchAgent always returns doc_id regardless of mock/real mode
+  // Verify ResearchAgent always returns doc_id and Apify diagnostics in meta
   {
-    name: 'POST /research → meta.doc_id present [ApifyClient any mode]',
+    name: 'POST /research → meta has doc_id + apifyMode + hasApifyToken',
     async run() {
       const r = await httpRequest('POST', '/command/command', AUTH, {
         command: '/research', user: 'e2e', source: 'e2e',
-        payload: { topic: 'doc_id presence check' },
+        payload: { topic: 'diagnostics check' },
       });
       const meta = r.body.meta as JsonBody | undefined;
-      const docId = typeof meta?.doc_id === 'string' && meta.doc_id.length > 0;
-      const passed = r.status === 200 && r.body.status === 'success' && docId;
+      const docId      = typeof meta?.doc_id === 'string' && meta.doc_id.length > 0;
+      const hasMode    = meta?.apifyMode === 'real' || meta?.apifyMode === 'mock';
+      const hasToken   = typeof meta?.hasApifyToken === 'boolean';
+      const hasActorId = typeof meta?.apifyActorId === 'string';
+      const passed = r.status === 200 && r.body.status === 'success' && docId && hasMode && hasToken && hasActorId;
       return { passed, detail: passed ? undefined : `meta: ${JSON.stringify(meta)}` };
     },
   },
@@ -398,9 +401,9 @@ const CASES: Case[] = [
   },
   cmd('POST /approval_list → 200 success [OpsAgent]', '/approval_list',
     { expectBody: (b) => b.status === 'success' }),
-  // /debug_env must return booleans only (no secrets)
+  // /debug_env must return booleans + apifyActorId, no secret values
   {
-    name: 'POST /debug_env → 200 env booleans [OpsAgent]',
+    name: 'POST /debug_env → 200 env booleans + apifyActorId [OpsAgent]',
     async run() {
       const r = await httpRequest('POST', '/command/command', AUTH, {
         command: '/debug_env', user: 'e2e', source: 'e2e', payload: {},
@@ -411,11 +414,12 @@ const CASES: Case[] = [
         typeof meta?.mockLlm === 'boolean' &&
         typeof meta?.telegramConfigured === 'boolean' &&
         typeof meta?.supabaseConfigured === 'boolean';
-      // Must not expose secret values
+      const hasActorId = typeof meta?.apifyActorId === 'string' && String(meta.apifyActorId).length > 0;
+      // Must not expose raw token values
       const replyStr = String(r.body.reply ?? '');
       const noSecrets = !replyStr.match(/apify[_-]?token\s*[:=]\s*\S{10,}/i);
-      const passed = r.status === 200 && r.body.status === 'success' && hasBooleans && noSecrets;
-      return { passed, detail: passed ? undefined : `meta: ${JSON.stringify(meta)} reply: ${replyStr.slice(0, 100)}` };
+      const passed = r.status === 200 && r.body.status === 'success' && hasBooleans && hasActorId && noSecrets;
+      return { passed, detail: passed ? undefined : `meta: ${JSON.stringify(meta)}` };
     },
   },
 

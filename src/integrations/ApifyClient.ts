@@ -4,6 +4,22 @@ import { Article, MarketData } from '../types';
 import { FileLogger } from '../memory/FileLogger';
 
 const BASE = 'https://api.apify.com/v2';
+const ACTOR_ID = 'apify/google-search-scraper';
+
+export interface ApifyDiagnostics {
+  apifyActorId: string;
+  apifyMode: 'real' | 'mock';
+  hasApifyToken: boolean;
+  fallbackReason?: string;
+  apifyErrorMessage?: string;
+}
+
+// Updated on every scrapeNews call so ResearchAgent and /debug_env can surface it.
+let lastDiagnostics: ApifyDiagnostics = {
+  apifyActorId: ACTOR_ID,
+  apifyMode: 'mock',
+  hasApifyToken: false,
+};
 
 // Re-read process.env each call — ENV is frozen at module load and would miss
 // a .env that dotenv loads after module init (e.g., runtime.js late copy scenario).
@@ -103,20 +119,24 @@ async function runActor(actorId: string, input: Record<string, unknown>): Promis
 
 export const ApifyClient = {
   async scrapeNews(query: string, limit = 5): Promise<Article[]> {
+    const hasToken = !!resolveToken();
     if (isMock()) {
-      const fallbackReason = !resolveToken() ? 'no_token' : 'mock_llm_flag';
+      const fallbackReason = !hasToken ? 'no_token' : 'mock_llm_flag';
+      lastDiagnostics = { apifyActorId: ACTOR_ID, apifyMode: 'mock', hasApifyToken: hasToken, fallbackReason };
       FileLogger.info('[ApifyClient] scrapeNews mock mode', { query, limit, fallbackReason });
       return mockArticles(query, limit);
     }
+    lastDiagnostics = { apifyActorId: ACTOR_ID, apifyMode: 'real', hasApifyToken: true };
     FileLogger.info('[ApifyClient] scrapeNews using real Apify', { query, limit, hasToken: true });
     try {
-      const raw = (await runActor('apify/google-search-scraper', {
+      const raw = (await runActor(ACTOR_ID, {
         queries: query,
         maxPagesPerQuery: 1,
         resultsPerPage: limit,
       })) as Array<Record<string, unknown>>;
       const articles = normalizeApifyItems(raw).slice(0, limit);
       if (articles.length === 0) {
+        lastDiagnostics = { apifyActorId: ACTOR_ID, apifyMode: 'mock', hasApifyToken: true, fallbackReason: 'empty_results' };
         FileLogger.info('[ApifyClient] scrapeNews Apify returned 0 results — falling back to mock', {
           query, fallbackReason: 'empty_results',
         });
@@ -125,9 +145,10 @@ export const ApifyClient = {
       FileLogger.info('[ApifyClient] scrapeNews Apify complete', { count: articles.length });
       return articles;
     } catch (err) {
-      const apifyError = err instanceof Error ? err.message : String(err);
+      const apifyErrorMessage = err instanceof Error ? err.message : String(err);
+      lastDiagnostics = { apifyActorId: ACTOR_ID, apifyMode: 'mock', hasApifyToken: true, fallbackReason: 'api_error', apifyErrorMessage };
       FileLogger.info('[ApifyClient] scrapeNews Apify failed — falling back to mock', {
-        query, apifyError, fallbackReason: 'api_error',
+        query, apifyErrorMessage, fallbackReason: 'api_error',
       });
       return mockArticles(query, limit);
     }
@@ -165,4 +186,5 @@ export const ApifyClient = {
   },
 
   isMock,
+  getLastDiagnostics(): ApifyDiagnostics { return { ...lastDiagnostics }; },
 };

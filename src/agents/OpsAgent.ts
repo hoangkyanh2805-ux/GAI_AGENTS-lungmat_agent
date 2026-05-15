@@ -1,6 +1,7 @@
 import { SubAgent, AgentMessage, AgentResponse, AgentRole, ExecutionContext } from '../types';
 import { JobQueue } from '../queue/JobQueue';
 import { ApprovalStore } from '../approval/ApprovalStore';
+import { ApifyClient } from '../integrations/ApifyClient';
 import { addStep } from '../trace/ExecutionTrace';
 
 export class OpsAgent implements SubAgent {
@@ -52,12 +53,15 @@ export class OpsAgent implements SubAgent {
       }
 
       case '/debug_env': {
-        // Returns boolean status only — never prints secret values
-        const envStatus = {
+        // Returns safe booleans and Apify diagnostics — never prints secret values
+        const apifyDiag = ApifyClient.getLastDiagnostics();
+        const envStatus: Record<string, unknown> = {
           hasApifyToken:      !!(process.env.APIFY_API_TOKEN || process.env.APIFY_TOKEN),
           mockLlm:            process.env.MOCK_LLM === '1',
           telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
           supabaseConfigured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+          apifyActorId:       apifyDiag.apifyActorId,
+          ...(apifyDiag.apifyErrorMessage ? { apifyLastError: apifyDiag.apifyErrorMessage } : {}),
         };
         addStep(ctx, { agent: this.name, action: 'debug_env', output: envStatus, duration_ms: 0 });
         return this.ok(
