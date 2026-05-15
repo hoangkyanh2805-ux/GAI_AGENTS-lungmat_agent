@@ -14,6 +14,7 @@
 
 const { spawnSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 const RUNTIME = 'C:\\lungmat_agent';
 const SRC = path.join(__dirname, '..');
@@ -57,6 +58,17 @@ const sync = spawnSync(
 if (sync.status !== null && sync.status >= 8) {
   console.error('[runtime.js] robocopy failed:', sync.stderr?.toString());
   process.exit(1);
+}
+
+// Copy .env from G: source to C: runtime — robocopy excludes it to avoid accidental commits,
+// but the runtime needs it for dotenv to load correctly.
+const envSrc = path.join(SRC, '.env');
+const envDst = path.join(RUNTIME, '.env');
+if (fs.existsSync(envSrc)) {
+  fs.copyFileSync(envSrc, envDst);
+  console.log('[runtime.js] .env synced to runtime');
+} else {
+  console.log('[runtime.js] WARNING: .env not found in source — runtime will use inherited env only');
 }
 
 // Run the script from the C: runtime where node_modules exists

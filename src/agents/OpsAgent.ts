@@ -51,6 +51,23 @@ export class OpsAgent implements SubAgent {
         );
       }
 
+      case '/debug_env': {
+        // Returns boolean status only — never prints secret values
+        const envStatus = {
+          hasApifyToken:      !!(process.env.APIFY_API_TOKEN || process.env.APIFY_TOKEN),
+          mockLlm:            process.env.MOCK_LLM === '1',
+          telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+          supabaseConfigured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+        };
+        addStep(ctx, { agent: this.name, action: 'debug_env', output: envStatus, duration_ms: 0 });
+        return this.ok(
+          `*Environment Status:*\n\`\`\`json\n${JSON.stringify(envStatus, null, 2)}\n\`\`\``,
+          [],
+          ctx,
+          envStatus,
+        );
+      }
+
       default:
         return this.err(`Unknown ops command: ${cmd}`, ctx);
     }

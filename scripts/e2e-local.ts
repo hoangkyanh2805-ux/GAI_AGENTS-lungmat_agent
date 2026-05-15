@@ -398,6 +398,26 @@ const CASES: Case[] = [
   },
   cmd('POST /approval_list → 200 success [OpsAgent]', '/approval_list',
     { expectBody: (b) => b.status === 'success' }),
+  // /debug_env must return booleans only (no secrets)
+  {
+    name: 'POST /debug_env → 200 env booleans [OpsAgent]',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/debug_env', user: 'e2e', source: 'e2e', payload: {},
+      });
+      const meta = r.body.meta as JsonBody | undefined;
+      const hasBooleans =
+        typeof meta?.hasApifyToken === 'boolean' &&
+        typeof meta?.mockLlm === 'boolean' &&
+        typeof meta?.telegramConfigured === 'boolean' &&
+        typeof meta?.supabaseConfigured === 'boolean';
+      // Must not expose secret values
+      const replyStr = String(r.body.reply ?? '');
+      const noSecrets = !replyStr.match(/apify[_-]?token\s*[:=]\s*\S{10,}/i);
+      const passed = r.status === 200 && r.body.status === 'success' && hasBooleans && noSecrets;
+      return { passed, detail: passed ? undefined : `meta: ${JSON.stringify(meta)} reply: ${replyStr.slice(0, 100)}` };
+    },
+  },
 
   // ── Phase 3: REST — POST /schedule ───────────────────────────────────────────
   {

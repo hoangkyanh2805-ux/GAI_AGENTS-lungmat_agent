@@ -1,6 +1,6 @@
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
-import { validateEnv, ENV } from './config/env';
+import { validateEnv, logEnvStatus, ENV } from './config/env';
 import { FileLogger } from './memory/FileLogger';
 import { MemoryManager } from './memory/MemoryManager';
 import { ToolRegistry } from './tools/ToolRegistry';
@@ -36,6 +36,7 @@ import { createApprovalRouter } from './routes/approval';
 import { createScheduleRouter, setScheduler } from './routes/schedule';
 
 validateEnv();
+logEnvStatus();
 
 // ── Shared infrastructure ─────────────────────────────────────────────────────
 const memory = new MemoryManager();

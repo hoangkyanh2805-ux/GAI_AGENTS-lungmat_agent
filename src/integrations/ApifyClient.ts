@@ -5,8 +5,14 @@ import { FileLogger } from '../memory/FileLogger';
 
 const BASE = 'https://api.apify.com/v2';
 
+// Re-read process.env each call — ENV is frozen at module load and would miss
+// a .env that dotenv loads after module init (e.g., runtime.js late copy scenario).
+function resolveToken(): string {
+  return process.env.APIFY_API_TOKEN || process.env.APIFY_TOKEN || ENV.APIFY_API_TOKEN;
+}
+
 function isMock(): boolean {
-  return !ENV.APIFY_API_TOKEN || process.env.MOCK_LLM === '1';
+  return !resolveToken() || process.env.MOCK_LLM === '1';
 }
 
 function mockArticles(query: string, limit: number): Article[] {
@@ -69,7 +75,7 @@ function mockMarketData(tickers: string[]): MarketData[] {
 }
 
 async function runActor(actorId: string, input: Record<string, unknown>): Promise<unknown[]> {
-  const token = ENV.APIFY_API_TOKEN;
+  const token = resolveToken();
   const { data: startData } = await axios.post(
     `${BASE}/acts/${encodeURIComponent(actorId)}/runs?token=${token}`,
     input,
@@ -98,10 +104,11 @@ async function runActor(actorId: string, input: Record<string, unknown>): Promis
 export const ApifyClient = {
   async scrapeNews(query: string, limit = 5): Promise<Article[]> {
     if (isMock()) {
-      FileLogger.info('[ApifyClient] scrapeNews mock mode', { query, limit });
+      const fallbackReason = !resolveToken() ? 'no_token' : 'mock_llm_flag';
+      FileLogger.info('[ApifyClient] scrapeNews mock mode', { query, limit, fallbackReason });
       return mockArticles(query, limit);
     }
-    FileLogger.info('[ApifyClient] scrapeNews real Apify', { query, limit });
+    FileLogger.info('[ApifyClient] scrapeNews using real Apify', { query, limit, hasToken: true });
     try {
       const raw = (await runActor('apify/google-search-scraper', {
         queries: query,
@@ -110,14 +117,17 @@ export const ApifyClient = {
       })) as Array<Record<string, unknown>>;
       const articles = normalizeApifyItems(raw).slice(0, limit);
       if (articles.length === 0) {
-        FileLogger.info('[ApifyClient] scrapeNews Apify returned 0 results — falling back to mock', { query });
+        FileLogger.info('[ApifyClient] scrapeNews Apify returned 0 results — falling back to mock', {
+          query, fallbackReason: 'empty_results',
+        });
         return mockArticles(query, limit);
       }
       FileLogger.info('[ApifyClient] scrapeNews Apify complete', { count: articles.length });
       return articles;
     } catch (err) {
+      const apifyError = err instanceof Error ? err.message : String(err);
       FileLogger.info('[ApifyClient] scrapeNews Apify failed — falling back to mock', {
-        query, error: err instanceof Error ? err.message : String(err),
+        query, apifyError, fallbackReason: 'api_error',
       });
       return mockArticles(query, limit);
     }
@@ -125,10 +135,11 @@ export const ApifyClient = {
 
   async scrapeMarketData(tickers: string[]): Promise<MarketData[]> {
     if (isMock()) {
-      FileLogger.info('[ApifyClient] scrapeMarketData mock mode', { tickers });
+      const fallbackReason = !resolveToken() ? 'no_token' : 'mock_llm_flag';
+      FileLogger.info('[ApifyClient] scrapeMarketData mock mode', { tickers, fallbackReason });
       return mockMarketData(tickers);
     }
-    FileLogger.info('[ApifyClient] scrapeMarketData real Apify', { tickers });
+    FileLogger.info('[ApifyClient] scrapeMarketData using real Apify', { tickers, hasToken: true });
     try {
       const query = tickers.map((t) => `${t} stock price today`).join('\n');
       const raw = (await runActor('apify/google-search-scraper', {
@@ -145,8 +156,9 @@ export const ApifyClient = {
         return { ticker, price, change: 0, change_pct: 0, timestamp: new Date().toISOString() };
       });
     } catch (err) {
+      const apifyError = err instanceof Error ? err.message : String(err);
       FileLogger.info('[ApifyClient] scrapeMarketData Apify failed — falling back to mock', {
-        tickers, error: err instanceof Error ? err.message : String(err),
+        tickers, apifyError, fallbackReason: 'api_error',
       });
       return mockMarketData(tickers);
     }

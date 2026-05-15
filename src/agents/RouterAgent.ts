@@ -32,6 +32,7 @@ const COMMAND_ROUTES: Record<string, AgentRole> = {
   // ── OpsAgent ─────────────────────────────────────────────────────────────
   '/queue_status':      'ops',
   '/approval_list':     'ops',
+  '/debug_env':         'ops',
 };
 
 export class RouterAgent {

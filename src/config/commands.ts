@@ -31,4 +31,5 @@ export const COMMANDS: CommandRegistry = {
   // ── OpsAgent ─────────────────────────────────────────────────────────────
   QUEUE_STATUS:      { command: '/queue_status',      description: 'View job queue status',                    agent: 'ops'                },
   APPROVAL_LIST:     { command: '/approval_list',     description: 'List pending content approvals',           agent: 'ops'                },
+  DEBUG_ENV:         { command: '/debug_env',         description: 'Show env booleans (no secrets exposed)',   agent: 'ops'                },
 };
