@@ -77,7 +77,27 @@ function normalizeApifyItems(items: Array<Record<string, unknown>>): Article[] {
 
 const MOCK_PRICES: Record<string, number> = {
   BTC: 65000, ETH: 3200, SPY: 520, AAPL: 185, MSFT: 415, NVDA: 880,
+  XAUUSD: 2500, XAGUSD: 30,
 };
+
+/** Tickers with a known Yahoo Finance symbol — real quotes without Google scrape. */
+export const YAHOO_SYMBOL_MAP: Record<string, string> = {
+  XAUUSD: 'GC=F',
+  XAGUSD: 'SI=F',
+  EURUSD: 'EURUSD=X',
+  GBPUSD: 'GBPUSD=X',
+  USDJPY: 'USDJPY=X',
+  BTC: 'BTC-USD',
+  ETH: 'ETH-USD',
+  SPY: 'SPY',
+  AAPL: 'AAPL',
+  MSFT: 'MSFT',
+  NVDA: 'NVDA',
+};
+
+function canUseYahooQuotes(tickers: string[]): boolean {
+  return tickers.length > 0 && tickers.every((t) => t in YAHOO_SYMBOL_MAP);
+}
 
 function mockMarketData(tickers: string[]): MarketData[] {
   return tickers.map((ticker) => ({
@@ -155,9 +175,10 @@ export const ApifyClient = {
   },
 
   async scrapeMarketData(tickers: string[]): Promise<MarketData[]> {
-    // Forex/commodity tickers go through Yahoo Finance — better quality than Google Search scraping
-    const FOREX_TICKERS = new Set(['XAUUSD', 'XAGUSD', 'EURUSD', 'GBPUSD', 'USDJPY']);
-    if (tickers.every((t) => FOREX_TICKERS.has(t))) return this.scrapeForexData(tickers);
+    if (canUseYahooQuotes(tickers)) {
+      FileLogger.info('[ApifyClient] scrapeMarketData via Yahoo Finance', { tickers });
+      return this.scrapeYahooMarketData(tickers);
+    }
 
     if (isMock()) {
       const fallbackReason = !resolveToken() ? 'no_token' : 'mock_llm_flag';
@@ -189,20 +210,13 @@ export const ApifyClient = {
     }
   },
 
-  async scrapeForexData(tickers: string[]): Promise<MarketData[]> {
-    const FOREX_MAP: Record<string, string> = {
-      XAUUSD: 'GC=F',          // COMEX Gold Futures — Yahoo XAUUSD=X returns 404
-      XAGUSD: 'SI=F',          // COMEX Silver Futures
-      EURUSD: 'EURUSD=X',
-      GBPUSD: 'GBPUSD=X',
-      USDJPY: 'USDJPY=X',
-    };
-
+  /** Yahoo Finance chart API — forex, commodities, equities, crypto (see YAHOO_SYMBOL_MAP). */
+  async scrapeYahooMarketData(tickers: string[]): Promise<MarketData[]> {
     if (isMock()) {
-      FileLogger.info('[ApifyClient] scrapeForexData mock mode', { tickers });
+      FileLogger.info('[ApifyClient] scrapeYahooMarketData mock mode', { tickers });
       return tickers.map((t) => ({
         ticker: t,
-        price: t === 'XAUUSD' ? 2500.0 : t === 'XAGUSD' ? 30.0 : 1.0,
+        price: MOCK_PRICES[t] ?? 100,
         change: 0,
         change_pct: 0,
         timestamp: new Date().toISOString(),
@@ -211,7 +225,7 @@ export const ApifyClient = {
 
     const out: MarketData[] = [];
     for (const t of tickers) {
-      const yahooSymbol = FOREX_MAP[t] ?? `${t}=X`;
+      const yahooSymbol = YAHOO_SYMBOL_MAP[t];
       try {
         const { data } = await axios.get(
           `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}`,
@@ -259,19 +273,68 @@ export const ApifyClient = {
               candles_5d: candles,
             },
           });
-          FileLogger.info('[ApifyClient] scrapeForexData ok', {
+          FileLogger.info('[ApifyClient] scrapeYahooMarketData ok', {
             ticker: t, price, change_pct: change_pct.toFixed(2),
           });
         } else {
-          FileLogger.info('[ApifyClient] scrapeForexData no data — using mock price', { ticker: t });
-          out.push({ ticker: t, price: t === 'XAUUSD' ? 2500 : t === 'XAGUSD' ? 30 : 1, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
+          FileLogger.info('[ApifyClient] scrapeYahooMarketData no data — fallback price', { ticker: t });
+          out.push({ ticker: t, price: MOCK_PRICES[t] ?? 100, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
         }
       } catch (err) {
-        FileLogger.error('[ApifyClient] scrapeForexData failed', { ticker: t, err: String(err) });
-        out.push({ ticker: t, price: t === 'XAUUSD' ? 2500 : t === 'XAGUSD' ? 30 : 1, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
+        FileLogger.error('[ApifyClient] scrapeYahooMarketData failed', { ticker: t, err: String(err) });
+        out.push({ ticker: t, price: MOCK_PRICES[t] ?? 100, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
       }
     }
     return out;
+  },
+
+  /** @deprecated Use scrapeYahooMarketData */
+  async scrapeForexData(tickers: string[]): Promise<MarketData[]> {
+    return this.scrapeYahooMarketData(tickers);
+  },
+
+  async scrapeForexIntraday(ticker: string, lookbackHours = 24): Promise<Array<{ time_iso: string; o: number; h: number; l: number; c: number }>> {
+    const FOREX_MAP: Record<string, string> = {
+      XAUUSD: 'GC=F', XAGUSD: 'SI=F',
+      EURUSD: 'EURUSD=X', GBPUSD: 'GBPUSD=X', USDJPY: 'USDJPY=X',
+    };
+    const yahooSymbol = FOREX_MAP[ticker] ?? `${ticker}=X`;
+
+    if (isMock()) {
+      FileLogger.info('[ApifyClient] scrapeForexIntraday mock', { ticker, lookbackHours });
+      return [];
+    }
+
+    try {
+      const { data } = await axios.get(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}`,
+        {
+          params: { interval: '60m', range: '5d' },
+          timeout: 10_000,
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        },
+      );
+      const result = data?.chart?.result?.[0];
+      const quotes = result?.indicators?.quote?.[0];
+      if (!result?.timestamp || !quotes) return [];
+
+      const candles: Array<{ time_iso: string; o: number; h: number; l: number; c: number }> = [];
+      const timestamps = result.timestamp as number[];
+      for (let i = 0; i < timestamps.length; i++) {
+        const o = (quotes.open  as Array<number | null>)?.[i];
+        const h = (quotes.high  as Array<number | null>)?.[i];
+        const l = (quotes.low   as Array<number | null>)?.[i];
+        const c = (quotes.close as Array<number | null>)?.[i];
+        if (o != null && h != null && l != null && c != null) {
+          candles.push({ time_iso: new Date(timestamps[i] * 1000).toISOString(), o, h, l, c });
+        }
+      }
+      FileLogger.info('[ApifyClient] scrapeForexIntraday ok', { ticker, total: candles.length, returning: Math.min(candles.length, lookbackHours) });
+      return candles.slice(-lookbackHours);
+    } catch (err) {
+      FileLogger.error('[ApifyClient] scrapeForexIntraday failed', { ticker, err: String(err) });
+      return [];
+    }
   },
 
   isMock,
