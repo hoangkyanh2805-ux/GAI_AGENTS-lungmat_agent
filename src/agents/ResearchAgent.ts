@@ -14,6 +14,7 @@ export class ResearchAgent implements SubAgent {
     const limit = (message.payload.limit as number | undefined) ?? 5;
 
     try {
+      FileLogger.info('[ResearchAgent] starting', { topic, limit, mock: ApifyClient.isMock() });
       const { result: articles, duration_ms: scrapeMs } = await timed(() =>
         ApifyClient.scrapeNews(topic, limit),
       );
@@ -21,7 +22,7 @@ export class ResearchAgent implements SubAgent {
         agent: this.name,
         action: 'scrape_news',
         input: { topic, limit },
-        output: { count: articles.length },
+        output: { count: articles.length, source: articles[0]?.source ?? 'unknown' },
         duration_ms: scrapeMs,
       });
 
@@ -40,12 +41,14 @@ export class ResearchAgent implements SubAgent {
         duration_ms: 0,
       });
 
-      FileLogger.info('[ResearchAgent] done', { topic, articles: articles.length, doc_id: doc.id });
+      const isMockData = articles.length > 0 && articles[0].source === 'mock';
+      FileLogger.info('[ResearchAgent] done', { topic, articles: articles.length, doc_id: doc.id, mock: isMockData });
 
       const preview = articles.slice(0, 3).map((a) => `• ${a.title}`).join('\n');
+      const modeTag = isMockData ? ' _(mock)_' : '';
       return {
         status: 'success',
-        reply: `*Research complete: ${topic}*\n\n${preview}\n\n+${Math.max(0, articles.length - 3)} more → ingested as doc \`${doc.id}\``,
+        reply: `*Research complete: ${topic}*${modeTag}\n\n${preview}\n\n+${Math.max(0, articles.length - 3)} more → ingested as doc \`${doc.id}\``,
         next_actions: ['/market_summary', '/write_thread'],
         agent: this.name,
         trace_id: ctx.trace_id,

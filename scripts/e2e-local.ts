@@ -196,6 +196,34 @@ const CASES: Case[] = [
   // ── Phase 3: ResearchAgent ────────────────────────────────────────────────────
   cmd('POST /research → 200 success [ResearchAgent]', '/research',
     { expectBody: (b) => b.status === 'success' && String(b.reply ?? '').includes('Research') }),
+  // Verify mock articles carry [Mock] prefix in mock mode (ApifyClient fallback path)
+  {
+    name: 'POST /research mock mode → reply contains [Mock] articles [ApifyClient mock]',
+    async run() {
+      if (!MOCK_LLM) return { passed: true, detail: 'skipped — not in MOCK_LLM mode' };
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/research', user: 'e2e', source: 'e2e',
+        payload: { topic: 'mock verification test' },
+      });
+      const reply = String(r.body.reply ?? '');
+      const passed = r.status === 200 && r.body.status === 'success' && reply.includes('[Mock]');
+      return { passed, detail: passed ? undefined : `reply (no [Mock]): ${reply.slice(0, 150)}` };
+    },
+  },
+  // Verify ResearchAgent always returns doc_id regardless of mock/real mode
+  {
+    name: 'POST /research → meta.doc_id present [ApifyClient any mode]',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/research', user: 'e2e', source: 'e2e',
+        payload: { topic: 'doc_id presence check' },
+      });
+      const meta = r.body.meta as JsonBody | undefined;
+      const docId = typeof meta?.doc_id === 'string' && meta.doc_id.length > 0;
+      const passed = r.status === 200 && r.body.status === 'success' && docId;
+      return { passed, detail: passed ? undefined : `meta: ${JSON.stringify(meta)}` };
+    },
+  },
 
   // ── Phase 3: MarketSummaryAgent ───────────────────────────────────────────────
   cmd('POST /market_summary → 200 success [MarketSummaryAgent]', '/market_summary',
