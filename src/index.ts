@@ -34,6 +34,7 @@ import { createRAGRouter } from './routes/rag';
 import { createQueueRouter } from './routes/queue';
 import { createApprovalRouter } from './routes/approval';
 import { createScheduleRouter, setScheduler } from './routes/schedule';
+import { TelegramReceiver } from './integrations/TelegramReceiver';
 
 validateEnv();
 logEnvStatus();
@@ -66,6 +67,8 @@ const supervisor = new SupervisorAgent(router, safety, [
   research, marketSummary, threadWriter, telegramPub, dailyReport,
   ragAgent, opsAgent,
 ]);
+
+const telegramReceiver = new TelegramReceiver(supervisor);
 
 // ── Job worker (background processor) ────────────────────────────────────────
 const jobWorker = new JobWorker();
@@ -155,4 +158,5 @@ app.listen(ENV.PORT, () => {
     tools: tools.list(),
     mock_llm: process.env.MOCK_LLM === '1',
   });
+  telegramReceiver.start();
 });
