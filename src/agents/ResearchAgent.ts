@@ -10,7 +10,7 @@ export class ResearchAgent implements SubAgent {
 
   async process(message: AgentMessage, ctx: ExecutionContext): Promise<AgentResponse> {
     const rawTopic = (message.payload.topic as string | undefined) ?? message.content.replace('/research', '').trim();
-    const topic = rawTopic || 'AI market trends';
+    const topic = rawTopic || 'gold XAUUSD news Fed inflation DXY dollar';
     const limit = (message.payload.limit as number | undefined) ?? 5;
 
     try {

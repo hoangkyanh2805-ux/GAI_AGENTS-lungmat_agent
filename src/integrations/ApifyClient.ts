@@ -191,8 +191,8 @@ export const ApifyClient = {
 
   async scrapeForexData(tickers: string[]): Promise<MarketData[]> {
     const FOREX_MAP: Record<string, string> = {
-      XAUUSD: 'XAUUSD=X',
-      XAGUSD: 'XAGUSD=X',
+      XAUUSD: 'GC=F',          // COMEX Gold Futures — Yahoo XAUUSD=X returns 404
+      XAGUSD: 'SI=F',          // COMEX Silver Futures
       EURUSD: 'EURUSD=X',
       GBPUSD: 'GBPUSD=X',
       USDJPY: 'USDJPY=X',
@@ -202,7 +202,7 @@ export const ApifyClient = {
       FileLogger.info('[ApifyClient] scrapeForexData mock mode', { tickers });
       return tickers.map((t) => ({
         ticker: t,
-        price: t === 'XAUUSD' ? 2350.50 : 1.0,
+        price: t === 'XAUUSD' ? 2500.0 : t === 'XAGUSD' ? 30.0 : 1.0,
         change: 0,
         change_pct: 0,
         timestamp: new Date().toISOString(),
@@ -264,11 +264,11 @@ export const ApifyClient = {
           });
         } else {
           FileLogger.info('[ApifyClient] scrapeForexData no data — using mock price', { ticker: t });
-          out.push({ ticker: t, price: t === 'XAUUSD' ? 2350 : 1, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
+          out.push({ ticker: t, price: t === 'XAUUSD' ? 2500 : t === 'XAGUSD' ? 30 : 1, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
         }
       } catch (err) {
         FileLogger.error('[ApifyClient] scrapeForexData failed', { ticker: t, err: String(err) });
-        out.push({ ticker: t, price: t === 'XAUUSD' ? 2350 : 1, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
+        out.push({ ticker: t, price: t === 'XAUUSD' ? 2500 : t === 'XAGUSD' ? 30 : 1, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
       }
     }
     return out;

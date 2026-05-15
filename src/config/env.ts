@@ -17,6 +17,7 @@ export const ENV = {
   // Telegram — optional; falls back to mock if absent
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ?? '',
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID ?? '',
+  ADMIN_TELEGRAM_CHAT_ID: process.env.ADMIN_TELEGRAM_CHAT_ID ?? '',
 } as const;
 
 export function validateEnv(): void {
@@ -32,6 +33,7 @@ export function logEnvStatus(): void {
     apifyMode:          (process.env.APIFY_API_TOKEN || process.env.APIFY_TOKEN) && process.env.MOCK_LLM !== '1' ? 'real' : 'mock',
     mockLlm:            process.env.MOCK_LLM === '1',
     telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+    hasAdminChatId:     !!process.env.ADMIN_TELEGRAM_CHAT_ID,
     supabaseConfigured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
     hasAnthropicKey:    !!process.env.ANTHROPIC_API_KEY,
   };

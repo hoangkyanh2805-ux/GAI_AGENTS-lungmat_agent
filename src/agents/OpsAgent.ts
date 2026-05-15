@@ -2,6 +2,7 @@ import { SubAgent, AgentMessage, AgentResponse, AgentRole, ExecutionContext } fr
 import { JobQueue } from '../queue/JobQueue';
 import { ApprovalStore } from '../approval/ApprovalStore';
 import { ApifyClient } from '../integrations/ApifyClient';
+import { approvePublish, rejectPublish } from '../skills/publishApproval';
 import { addStep } from '../trace/ExecutionTrace';
 
 export class OpsAgent implements SubAgent {
@@ -70,6 +71,22 @@ export class OpsAgent implements SubAgent {
           ctx,
           envStatus,
         );
+      }
+
+      case '/approve_publish': {
+        addStep(ctx, { agent: this.name, action: 'approve_publish', input: { approval_id: message.payload.approval_id }, output: {}, duration_ms: 0 });
+        const r = await approvePublish(message.payload);
+        return r.reply.startsWith('⚠️')
+          ? this.err(r.reply, ctx)
+          : this.ok(r.reply, r.next_actions, ctx);
+      }
+
+      case '/reject_publish': {
+        addStep(ctx, { agent: this.name, action: 'reject_publish', input: { approval_id: message.payload.approval_id }, output: {}, duration_ms: 0 });
+        const r = await rejectPublish(message.payload);
+        return r.reply.startsWith('⚠️')
+          ? this.err(r.reply, ctx)
+          : this.ok(r.reply, r.next_actions, ctx);
       }
 
       default:

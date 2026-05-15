@@ -32,4 +32,6 @@ export const COMMANDS: CommandRegistry = {
   QUEUE_STATUS:      { command: '/queue_status',      description: 'View job queue status',                    agent: 'ops'                },
   APPROVAL_LIST:     { command: '/approval_list',     description: 'List pending content approvals',           agent: 'ops'                },
   DEBUG_ENV:         { command: '/debug_env',         description: 'Show env booleans (no secrets exposed)',   agent: 'ops'                },
+  APPROVE_PUBLISH:   { command: '/approve_publish',   description: '(internal) Approve and publish a draft',  agent: 'ops'                },
+  REJECT_PUBLISH:    { command: '/reject_publish',    description: '(internal) Reject a pending draft',       agent: 'ops'                },
 };

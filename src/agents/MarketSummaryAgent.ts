@@ -50,10 +50,11 @@ export class MarketSummaryAgent implements SubAgent {
           [{ role: 'user', content: `Phân tích dữ liệu XAUUSD:\n\n${dataText}` }],
           {
             system:
-              'Bạn là Forex analyst chuyên gold (XAU/USD). Tóm tắt 2 đoạn ngắn (tiếng Việt): ' +
-              '(1) trạng thái hiện tại — spot price, daily range, change% vs prev close. ' +
+              'Bạn là Forex/Commodities analyst chuyên gold (XAU/USD). Dữ liệu giá đến từ COMEX Gold Futures (GC=F), ' +
+              'sát với spot trong khoảng ±$20. Tóm tắt 2 đoạn ngắn (tiếng Việt): ' +
+              '(1) trạng thái hiện tại — giá futures, daily range, change% vs prev close. ' +
               '(2) key levels — support/resistance gần nhất từ 5 candle vừa qua, sentiment chung. ' +
-              'KHÔNG đưa ra recommendation buy/sell cụ thể.',
+              'KHÔNG đưa ra recommendation buy/sell cụ thể. Sử dụng tiếng Việt thuần — KHÔNG chèn từ tiếng Hàn/Trung.',
           },
         ),
       );

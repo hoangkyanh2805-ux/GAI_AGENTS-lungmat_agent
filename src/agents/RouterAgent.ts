@@ -33,6 +33,8 @@ const COMMAND_ROUTES: Record<string, AgentRole> = {
   '/queue_status':      'ops',
   '/approval_list':     'ops',
   '/debug_env':         'ops',
+  '/approve_publish':   'ops',
+  '/reject_publish':    'ops',
 };
 
 export class RouterAgent {

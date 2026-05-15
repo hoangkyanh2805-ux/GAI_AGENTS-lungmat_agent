@@ -17,7 +17,8 @@ export interface TelegramReceiverProcessor {
 interface TgUser { id: number; first_name?: string; username?: string }
 interface TgChat { id: number; type: string }
 interface TgMessage { message_id: number; from?: TgUser; chat: TgChat; text?: string; date: number }
-interface TgUpdate { update_id: number; message?: TgMessage }
+interface TgCallbackQuery { id: string; from: TgUser; message?: TgMessage; data?: string }
+interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallbackQuery }
 interface TgGetUpdatesResp { ok: boolean; result?: TgUpdate[]; description?: string }
 
 export class TelegramReceiver {
@@ -53,7 +54,7 @@ export class TelegramReceiver {
     while (this.running) {
       try {
         const { data } = await axios.get<TgGetUpdatesResp>(`${this.baseUrl}/getUpdates`, {
-          params: { offset: this.offset, timeout: 30 },
+          params: { offset: this.offset, timeout: 30, allowed_updates: JSON.stringify(['message', 'callback_query']) },
           timeout: 35_000,
         });
         if (!data.ok) {
@@ -73,6 +74,10 @@ export class TelegramReceiver {
   }
 
   private async handleUpdate(update: TgUpdate): Promise<void> {
+    if (update.callback_query) {
+      await this.handleCallbackQuery(update.callback_query);
+      return;
+    }
     const msg = update.message;
     if (!msg?.text) return;
     const text = msg.text.trim();
@@ -106,6 +111,45 @@ export class TelegramReceiver {
       } catch (sendErr) {
         FileLogger.error('[TelegramReceiver] failed to send error message', sendErr);
       }
+    }
+  }
+
+  private async handleCallbackQuery(cq: TgCallbackQuery): Promise<void> {
+    const data = cq.data ?? '';
+    const user = String(cq.from.id);
+    FileLogger.info('[TelegramReceiver] callback_query in', { user, data });
+
+    // data format: "approve:<approvalId>" or "reject:<approvalId>"
+    const colonIdx = data.indexOf(':');
+    const action     = colonIdx >= 0 ? data.slice(0, colonIdx) : data;
+    const approvalId = colonIdx >= 0 ? data.slice(colonIdx + 1) : '';
+
+    if (!approvalId || (action !== 'approve' && action !== 'reject')) {
+      await TelegramClient.answerCallbackQuery(cq.id, 'Unknown action');
+      return;
+    }
+
+    try {
+      const result = await this.processor.process(
+        action === 'approve' ? '/approve_publish' : '/reject_publish',
+        { approval_id: approvalId, original_message_id: cq.message?.message_id, original_chat_id: cq.message?.chat.id },
+        { user, source: 'telegram_callback' },
+      );
+      await TelegramClient.answerCallbackQuery(cq.id, result.reply.slice(0, 200));
+
+      // Strip inline keyboard from the original draft + append status line
+      if (cq.message) {
+        const statusTag  = action === 'approve' ? '✅ APPROVED' : '❌ REJECTED';
+        const originalText = cq.message.text ?? '';
+        await TelegramClient.editMessageText(
+          cq.message.chat.id,
+          cq.message.message_id,
+          `${originalText}\n\n${statusTag} (${new Date().toISOString().slice(11, 16)} UTC by ${user})`,
+        );
+      }
+    } catch (err) {
+      FileLogger.error('[TelegramReceiver] callback handler crashed', err);
+      await TelegramClient.answerCallbackQuery(cq.id, '⚠️ Internal error');
     }
   }
 
