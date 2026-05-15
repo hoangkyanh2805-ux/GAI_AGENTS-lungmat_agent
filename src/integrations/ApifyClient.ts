@@ -155,6 +155,10 @@ export const ApifyClient = {
   },
 
   async scrapeMarketData(tickers: string[]): Promise<MarketData[]> {
+    // Forex/commodity tickers go through Yahoo Finance — better quality than Google Search scraping
+    const FOREX_TICKERS = new Set(['XAUUSD', 'XAGUSD', 'EURUSD', 'GBPUSD', 'USDJPY']);
+    if (tickers.every((t) => FOREX_TICKERS.has(t))) return this.scrapeForexData(tickers);
+
     if (isMock()) {
       const fallbackReason = !resolveToken() ? 'no_token' : 'mock_llm_flag';
       FileLogger.info('[ApifyClient] scrapeMarketData mock mode', { tickers, fallbackReason });
@@ -183,6 +187,91 @@ export const ApifyClient = {
       });
       return mockMarketData(tickers);
     }
+  },
+
+  async scrapeForexData(tickers: string[]): Promise<MarketData[]> {
+    const FOREX_MAP: Record<string, string> = {
+      XAUUSD: 'XAUUSD=X',
+      XAGUSD: 'XAGUSD=X',
+      EURUSD: 'EURUSD=X',
+      GBPUSD: 'GBPUSD=X',
+      USDJPY: 'USDJPY=X',
+    };
+
+    if (isMock()) {
+      FileLogger.info('[ApifyClient] scrapeForexData mock mode', { tickers });
+      return tickers.map((t) => ({
+        ticker: t,
+        price: t === 'XAUUSD' ? 2350.50 : 1.0,
+        change: 0,
+        change_pct: 0,
+        timestamp: new Date().toISOString(),
+      }));
+    }
+
+    const out: MarketData[] = [];
+    for (const t of tickers) {
+      const yahooSymbol = FOREX_MAP[t] ?? `${t}=X`;
+      try {
+        const { data } = await axios.get(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}`,
+          {
+            params: { interval: '1d', range: '5d' },
+            timeout: 10_000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+          },
+        );
+        const result = data?.chart?.result?.[0];
+        const meta   = result?.meta;
+        const quotes = result?.indicators?.quote?.[0];
+        if (meta && typeof meta.regularMarketPrice === 'number') {
+          const price    = meta.regularMarketPrice as number;
+          const prev     = typeof meta.chartPreviousClose === 'number' ? meta.chartPreviousClose as number : price;
+          const change   = price - prev;
+          const change_pct = prev ? (change / prev) * 100 : 0;
+
+          const candles: Array<{ date: string; o: number; h: number; l: number; c: number }> = [];
+          if (quotes && Array.isArray(result.timestamp)) {
+            for (let i = 0; i < (result.timestamp as number[]).length; i++) {
+              const o = (quotes.open  as number[])?.[i];
+              const h = (quotes.high  as number[])?.[i];
+              const l = (quotes.low   as number[])?.[i];
+              const c = (quotes.close as number[])?.[i];
+              if (o != null && h != null && l != null && c != null) {
+                candles.push({
+                  date: new Date((result.timestamp as number[])[i] * 1000).toISOString().slice(0, 10),
+                  o, h, l, c,
+                });
+              }
+            }
+          }
+
+          out.push({
+            ticker: t,
+            price,
+            change,
+            change_pct,
+            timestamp: new Date().toISOString(),
+            extra: {
+              day_high:   meta.regularMarketDayHigh  ?? null,
+              day_low:    meta.regularMarketDayLow   ?? null,
+              prev_close: prev,
+              candles_5d: candles,
+            },
+          });
+          FileLogger.info('[ApifyClient] scrapeForexData ok', {
+            ticker: t, price, change_pct: change_pct.toFixed(2),
+          });
+        } else {
+          FileLogger.info('[ApifyClient] scrapeForexData no data — using mock price', { ticker: t });
+          out.push({ ticker: t, price: t === 'XAUUSD' ? 2350 : 1, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
+        }
+      } catch (err) {
+        FileLogger.error('[ApifyClient] scrapeForexData failed', { ticker: t, err: String(err) });
+        out.push({ ticker: t, price: t === 'XAUUSD' ? 2350 : 1, change: 0, change_pct: 0, timestamp: new Date().toISOString() });
+      }
+    }
+    return out;
   },
 
   isMock,

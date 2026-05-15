@@ -5,7 +5,7 @@ import { RAGStore } from '../rag/RAGStore';
 import { addStep, timed } from '../trace/ExecutionTrace';
 import { FileLogger } from '../memory/FileLogger';
 
-const DEFAULT_TICKERS = ['BTC', 'ETH', 'SPY', 'AAPL', 'MSFT'];
+const DEFAULT_TICKERS = ['XAUUSD'];
 
 export class MarketSummaryAgent implements SubAgent {
   readonly name = 'MarketSummaryAgent';
@@ -28,13 +28,33 @@ export class MarketSummaryAgent implements SubAgent {
       });
 
       const dataText = marketData
-        .map((d) => `${d.ticker}: $${d.price.toFixed(2)} (${d.change_pct >= 0 ? '+' : ''}${d.change_pct.toFixed(2)}%)`)
+        .map((d) => {
+          let line = `${d.ticker}: $${d.price.toFixed(2)} (${d.change_pct >= 0 ? '+' : ''}${d.change_pct.toFixed(2)}%)`;
+          if (d.extra) {
+            if (d.extra.day_high != null && d.extra.day_low != null) {
+              line += `\n  Daily range: ${d.extra.day_low.toFixed(2)} – ${d.extra.day_high.toFixed(2)}`;
+            }
+            if (d.extra.candles_5d && d.extra.candles_5d.length > 0) {
+              const c = d.extra.candles_5d
+                .map((k) => `${k.date}: O=${k.o.toFixed(2)} H=${k.h.toFixed(2)} L=${k.l.toFixed(2)} C=${k.c.toFixed(2)}`)
+                .join('\n  ');
+              line += `\n  Recent 5d candles:\n  ${c}`;
+            }
+          }
+          return line;
+        })
         .join('\n');
 
       const { result: summary, duration_ms: llmMs } = await timed(() =>
         AnthropicClient.chat(
-          [{ role: 'user', content: `Analyze this market data:\n\n${dataText}` }],
-          { system: 'You are a concise market analyst. Provide a 2-paragraph market summary with key takeaways.' },
+          [{ role: 'user', content: `Phân tích dữ liệu XAUUSD:\n\n${dataText}` }],
+          {
+            system:
+              'Bạn là Forex analyst chuyên gold (XAU/USD). Tóm tắt 2 đoạn ngắn (tiếng Việt): ' +
+              '(1) trạng thái hiện tại — spot price, daily range, change% vs prev close. ' +
+              '(2) key levels — support/resistance gần nhất từ 5 candle vừa qua, sentiment chung. ' +
+              'KHÔNG đưa ra recommendation buy/sell cụ thể.',
+          },
         ),
       );
       addStep(ctx, {

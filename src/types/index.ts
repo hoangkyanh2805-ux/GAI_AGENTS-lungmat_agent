@@ -241,6 +241,12 @@ export interface MarketData {
   change_pct: number;
   volume?: number;
   timestamp: string;
+  extra?: {
+    day_high?: number | null;
+    day_low?: number | null;
+    prev_close?: number;
+    candles_5d?: Array<{ date: string; o: number; h: number; l: number; c: number }>;
+  };
 }
 
 // ── Retry ─────────────────────────────────────────────────────────────────────
