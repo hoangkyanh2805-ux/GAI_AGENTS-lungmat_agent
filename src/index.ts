@@ -158,5 +158,17 @@ app.listen(ENV.PORT, () => {
     tools: tools.list(),
     mock_llm: process.env.MOCK_LLM === '1',
   });
-  telegramReceiver.start();
 });
+
+// ── Telegram inbound receiver (long-polling) ─────────────────────────────────
+telegramReceiver.start();
+
+// Graceful shutdown
+const shutdown = (signal: string): void => {
+  FileLogger.info(`[index] ${signal} received — shutting down`);
+  telegramReceiver.stop();
+  scheduler.stop?.();          // safe if method missing
+  process.exit(0);
+};
+process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
