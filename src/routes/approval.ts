@@ -1,5 +1,13 @@
 import { Router, Request, Response } from 'express';
-import { ApprovalStore } from '../approval/ApprovalStore';
+import { ApprovalStore, AmbiguousPrefixError } from '../approval/ApprovalStore';
+
+function handleStoreError(err: unknown, res: Response): void {
+  if (err instanceof AmbiguousPrefixError) {
+    res.status(400).json({ status: 'error', message: err.message });
+  } else {
+    res.status(500).json({ status: 'error', message: 'Internal error' });
+  }
+}
 
 export function createApprovalRouter(): Router {
   const router = Router();
@@ -11,33 +19,45 @@ export function createApprovalRouter(): Router {
     res.json({ status: 'success', count: approvals.length, approvals });
   });
 
-  // GET /approval/:id
+  // GET /approval/:id  — accepts full UUID or unique prefix
   router.get('/:id', (req: Request, res: Response): void => {
-    const approval = ApprovalStore.get(req.params.id);
-    if (!approval) { res.status(404).json({ status: 'error', message: 'Approval not found' }); return; }
-    res.json({ status: 'success', approval });
+    try {
+      const approval = ApprovalStore.get(req.params.id);
+      if (!approval) { res.status(404).json({ status: 'error', message: 'Approval not found' }); return; }
+      res.json({ status: 'success', approval });
+    } catch (err) {
+      handleStoreError(err, res);
+    }
   });
 
-  // POST /approval/:id/approve
+  // POST /approval/:id/approve  — accepts full UUID or unique prefix
   router.post('/:id/approve', (req: Request, res: Response): void => {
-    const reviewedBy = (req.body as { reviewed_by?: string }).reviewed_by ?? 'human';
-    const approval = ApprovalStore.approve(req.params.id, reviewedBy);
-    if (!approval) {
-      res.status(404).json({ status: 'error', message: 'Approval not found or already reviewed' });
-      return;
+    try {
+      const reviewedBy = (req.body as { reviewed_by?: string }).reviewed_by ?? 'human';
+      const approval = ApprovalStore.approve(req.params.id, reviewedBy);
+      if (!approval) {
+        res.status(404).json({ status: 'error', message: 'Approval not found or already reviewed' });
+        return;
+      }
+      res.json({ status: 'success', approval });
+    } catch (err) {
+      handleStoreError(err, res);
     }
-    res.json({ status: 'success', approval });
   });
 
-  // POST /approval/:id/reject
+  // POST /approval/:id/reject  — accepts full UUID or unique prefix
   router.post('/:id/reject', (req: Request, res: Response): void => {
-    const reviewedBy = (req.body as { reviewed_by?: string }).reviewed_by ?? 'human';
-    const approval = ApprovalStore.reject(req.params.id, reviewedBy);
-    if (!approval) {
-      res.status(404).json({ status: 'error', message: 'Approval not found or already reviewed' });
-      return;
+    try {
+      const reviewedBy = (req.body as { reviewed_by?: string }).reviewed_by ?? 'human';
+      const approval = ApprovalStore.reject(req.params.id, reviewedBy);
+      if (!approval) {
+        res.status(404).json({ status: 'error', message: 'Approval not found or already reviewed' });
+        return;
+      }
+      res.json({ status: 'success', approval });
+    } catch (err) {
+      handleStoreError(err, res);
     }
-    res.json({ status: 'success', approval });
   });
 
   return router;

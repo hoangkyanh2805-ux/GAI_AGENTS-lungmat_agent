@@ -320,6 +320,54 @@ const CASES: Case[] = [
   // ── Phase 3: OpsAgent ────────────────────────────────────────────────────────
   cmd('POST /queue_status → 200 success [OpsAgent]', '/queue_status',
     { expectBody: (b) => b.status === 'success' }),
+
+  // ── Approval ID UX fixes ──────────────────────────────────────────────────────
+  {
+    name: '/approval_list reply contains full UUID (not truncated)',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/approval_list', user: 'e2e', source: 'e2e', payload: {},
+      });
+      const meta = r.body.meta as JsonBody | undefined;
+      const approvals = meta?.approvals as Array<{ id: string }> | undefined;
+      // Full UUID is 36 chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      const fullId = Array.isArray(approvals) && approvals.length > 0 && approvals[0].id.length === 36;
+      const passed = r.status === 200 && r.body.status === 'success' && fullId;
+      return { passed, detail: passed ? undefined : `meta.approvals[0].id=${approvals?.[0]?.id ?? 'missing'}` };
+    },
+  },
+  {
+    name: 'POST /approval/:fullId/approve → 200 by full UUID',
+    async run() {
+      // Write a fresh thread and approve by full UUID
+      const wr = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/write_thread', user: 'e2e', source: 'e2e', payload: { topic: 'Full ID test' },
+      });
+      const aid = (wr.body.meta as JsonBody | undefined)?.approval_id as string | undefined;
+      if (!aid) return { passed: false, detail: 'no approval_id from /write_thread' };
+      const r = await httpRequest('POST', `/approval/${aid}/approve`, AUTH, {});
+      const passed = r.status === 200 && (r.body.approval as JsonBody)?.status === 'approved';
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+  {
+    name: 'POST /approval/:prefix/approve → 200 by short unique prefix',
+    async run() {
+      // Write another thread; approve using only the first 8 chars of its ID
+      const wr = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/write_thread', user: 'e2e', source: 'e2e', payload: { topic: 'Prefix ID test' },
+      });
+      const aid = (wr.body.meta as JsonBody | undefined)?.approval_id as string | undefined;
+      if (!aid) return { passed: false, detail: 'no approval_id from /write_thread' };
+      const prefix = aid.slice(0, 8);
+      const r = await httpRequest('POST', `/approval/${prefix}/approve`, AUTH, {});
+      const passed =
+        r.status === 200 &&
+        (r.body.approval as JsonBody)?.status === 'approved' &&
+        (r.body.approval as JsonBody)?.id === aid; // confirm resolved to the right record
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
   cmd('POST /approval_list → 200 success [OpsAgent]', '/approval_list',
     { expectBody: (b) => b.status === 'success' }),
 

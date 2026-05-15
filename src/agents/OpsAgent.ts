@@ -39,10 +39,16 @@ export class OpsAgent implements SubAgent {
         const status = message.payload.status as 'pending' | 'approved' | 'rejected' | undefined;
         const approvals = ApprovalStore.list(status);
         addStep(ctx, { agent: this.name, action: 'approval_list', output: { count: approvals.length }, duration_ms: 0 });
-        const list = approvals.slice(0, 10)
-          .map((a) => `• [${a.status}] \`${a.id.slice(0, 8)}\` — ${a.type} by ${a.agent}`)
+        const shown = approvals.slice(0, 10);
+        const list = shown
+          .map((a) => `• [${a.status}] \`${a.id}\` — ${a.type} by ${a.agent}`)
           .join('\n');
-        return this.ok(`*Approval Queue (${approvals.length}):*\n${list || '_(none)_'}`, [], ctx);
+        return this.ok(
+          `*Approval Queue (${approvals.length}):*\n${list || '_(none)_'}`,
+          [],
+          ctx,
+          { approvals: shown.map((a) => ({ id: a.id, status: a.status, type: a.type, agent: a.agent })) },
+        );
       }
 
       default:

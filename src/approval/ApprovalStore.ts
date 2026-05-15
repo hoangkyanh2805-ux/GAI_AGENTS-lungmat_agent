@@ -23,6 +23,24 @@ function save(approvals: ApprovalRequest[]): void {
   fs.writeFileSync(APPROVAL_FILE, JSON.stringify(approvals, null, 2), 'utf8');
 }
 
+export class AmbiguousPrefixError extends Error {
+  constructor(prefix: string, count: number) {
+    super(`Prefix "${prefix}" is ambiguous — matches ${count} approvals. Use more characters.`);
+    this.name = 'AmbiguousPrefixError';
+  }
+}
+
+// Resolve a full UUID or a unique prefix to an ApprovalRequest.
+// Returns null if not found; throws AmbiguousPrefixError if prefix matches multiple.
+function resolve(all: ApprovalRequest[], idOrPrefix: string): ApprovalRequest | null {
+  const exact = all.find((a) => a.id === idOrPrefix);
+  if (exact) return exact;
+  const matches = all.filter((a) => a.id.startsWith(idOrPrefix));
+  if (matches.length === 1) return matches[0];
+  if (matches.length > 1) throw new AmbiguousPrefixError(idOrPrefix, matches.length);
+  return null;
+}
+
 export const ApprovalStore = {
   create(opts: {
     trace_id: string;
@@ -44,32 +62,35 @@ export const ApprovalStore = {
     return approval;
   },
 
-  approve(id: string, reviewedBy = 'human'): ApprovalRequest | null {
+  // Accepts full UUID or unique prefix. Throws AmbiguousPrefixError on ambiguous prefix.
+  approve(idOrPrefix: string, reviewedBy = 'human'): ApprovalRequest | null {
     const all = load();
-    const a = all.find((x) => x.id === id);
+    const a = resolve(all, idOrPrefix);
     if (!a || a.status !== 'pending') return null;
     a.status = 'approved';
     a.reviewed_at = new Date().toISOString();
     a.reviewed_by = reviewedBy;
     save(all);
-    FileLogger.info('[ApprovalStore] approved', { id, by: reviewedBy });
+    FileLogger.info('[ApprovalStore] approved', { id: a.id, by: reviewedBy });
     return a;
   },
 
-  reject(id: string, reviewedBy = 'human'): ApprovalRequest | null {
+  // Accepts full UUID or unique prefix. Throws AmbiguousPrefixError on ambiguous prefix.
+  reject(idOrPrefix: string, reviewedBy = 'human'): ApprovalRequest | null {
     const all = load();
-    const a = all.find((x) => x.id === id);
+    const a = resolve(all, idOrPrefix);
     if (!a || a.status !== 'pending') return null;
     a.status = 'rejected';
     a.reviewed_at = new Date().toISOString();
     a.reviewed_by = reviewedBy;
     save(all);
-    FileLogger.info('[ApprovalStore] rejected', { id, by: reviewedBy });
+    FileLogger.info('[ApprovalStore] rejected', { id: a.id, by: reviewedBy });
     return a;
   },
 
-  get(id: string): ApprovalRequest | null {
-    return load().find((a) => a.id === id) ?? null;
+  // Accepts full UUID or unique prefix. Throws AmbiguousPrefixError on ambiguous prefix.
+  get(idOrPrefix: string): ApprovalRequest | null {
+    return resolve(load(), idOrPrefix);
   },
 
   list(status?: 'pending' | 'approved' | 'rejected'): ApprovalRequest[] {
