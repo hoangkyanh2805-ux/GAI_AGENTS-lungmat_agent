@@ -1,4 +1,5 @@
 import { Skill } from '../types';
+import { StartSkill } from './start';
 import { HelpSkill } from './help';
 import { ReportTodaySkill } from './reportToday';
 import { CheckErrorsSkill } from './checkErrors';
@@ -10,6 +11,7 @@ import { ProductInfoSkill } from './productInfo';
 
 export function buildSupportSkills(): Skill[] {
   return [
+    new StartSkill(),
     new HelpSkill(),
     new ReportTodaySkill(),
     new CheckErrorsSkill(),

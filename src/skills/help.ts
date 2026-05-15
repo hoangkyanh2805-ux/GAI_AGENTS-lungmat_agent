@@ -12,7 +12,7 @@ export class HelpSkill implements Skill {
       .join('\n');
 
     return {
-      reply: `*Available Commands:*\n\n${list}`,
+      reply: `*Linh Cẩu Trader* 🐆 — Full menu lệnh:\n\n${list}\n\nDùng lệnh gì cứ gõ thẳng ae, em nghe 🔥`,
       next_actions: [],
     };
   }

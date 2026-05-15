@@ -2,6 +2,7 @@ import { CommandRegistry } from '../types';
 
 export const COMMANDS: CommandRegistry = {
   // ── SupportAgent ─────────────────────────────────────────────────────────
+  START:             { command: '/start',             description: 'Khởi động bot — chào hỏi Linh Cẩu style', agent: 'support'            },
   HELP:              { command: '/help',              description: 'List all available commands',              agent: 'support'            },
   REPORT_TODAY:      { command: '/report_today',      description: 'Daily content system report',              agent: 'support'            },
   CHECK_ERRORS:      { command: '/check_errors',      description: 'Check system errors and incidents',        agent: 'support'            },

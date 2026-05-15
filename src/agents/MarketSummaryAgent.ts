@@ -4,6 +4,7 @@ import { AnthropicClient } from '../integrations/AnthropicClient';
 import { RAGStore } from '../rag/RAGStore';
 import { addStep, timed } from '../trace/ExecutionTrace';
 import { FileLogger } from '../memory/FileLogger';
+import { withPersona } from '../llm/persona';
 
 const DEFAULT_TICKERS = ['XAUUSD'];
 
@@ -49,12 +50,21 @@ export class MarketSummaryAgent implements SubAgent {
         AnthropicClient.chat(
           [{ role: 'user', content: `Phân tích dữ liệu XAUUSD:\n\n${dataText}` }],
           {
-            system:
-              'Bạn là Forex/Commodities analyst chuyên gold (XAU/USD). Dữ liệu giá đến từ COMEX Gold Futures (GC=F), ' +
-              'sát với spot trong khoảng ±$20. Tóm tắt 2 đoạn ngắn (tiếng Việt): ' +
-              '(1) trạng thái hiện tại — giá futures, daily range, change% vs prev close. ' +
-              '(2) key levels — support/resistance gần nhất từ 5 candle vừa qua, sentiment chung. ' +
-              'KHÔNG đưa ra recommendation buy/sell cụ thể. Sử dụng tiếng Việt thuần — KHÔNG chèn từ tiếng Hàn/Trung.',
+            system: withPersona(
+              'Bạn ở vai trò Forex/Commodities analyst chuyên gold (XAU/USD). Dữ liệu giá đến từ COMEX Gold Futures (GC=F), sát với spot ±$20.\n\n' +
+              'Format reply (Markdown):\n' +
+              '## 📊 Trạng thái hiện tại\n' +
+              '   [Tóm tắt 2-3 câu — giá, change%, daily range. Phần này CHÍNH XÁC, không slang. Có thể lầy 1 câu nhận xét.]\n\n' +
+              '## 🎯 Key levels & Sentiment\n' +
+              '   - Support: [từ candles thật]\n' +
+              '   - Resistance: [từ candles thật]\n' +
+              '   - Xu hướng: [chuỗi nến gần đây]\n' +
+              '   - Sentiment: [tâm lý market — slang OK ở đây]\n\n' +
+              '## ⚠️ Cảnh báo (nếu có)\n' +
+              '   [Chỉ thêm section này nếu có risk rõ — break support mạnh, news Fed, v.v.]\n\n' +
+              'KHÔNG đưa khuyến nghị buy/sell. KHÔNG nói "anh nên mua giá X". ' +
+              'Sử dụng tiếng Việt thuần — KHÔNG chèn từ Hàn/Trung.',
+            ),
           },
         ),
       );
