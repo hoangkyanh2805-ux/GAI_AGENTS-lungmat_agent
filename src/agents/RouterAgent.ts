@@ -3,6 +3,7 @@ import { AgentMessage, AgentRole, ExecutionContext, RoutingDecision } from '../t
 // Static routing table: exact command → target agent role
 const COMMAND_ROUTES: Record<string, AgentRole> = {
   // ── SupportAgent ─────────────────────────────────────────────────────────
+  '/start':             'support',
   '/help':              'support',
   '/report_today':      'support',
   '/check_errors':      'support',
@@ -22,6 +23,7 @@ const COMMAND_ROUTES: Record<string, AgentRole> = {
   '/market_summary':    'market_summary',
   // ── ThreadWriterAgent ─────────────────────────────────────────────────────
   '/write_thread':      'thread_writer',
+  '/content':           'content',
   // ── TelegramPublisherAgent ────────────────────────────────────────────────
   '/publish_telegram':  'telegram_publisher',
   // ── DailyReportAgent ─────────────────────────────────────────────────────
@@ -35,6 +37,8 @@ const COMMAND_ROUTES: Record<string, AgentRole> = {
   '/debug_env':         'ops',
   '/approve_publish':   'ops',
   '/reject_publish':    'ops',
+  // ── CoachAgent (admin DM — Lửng Mật) ─────────────────────────────────────
+  '/coach':             'coach',
 };
 
 export class RouterAgent {

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { ApprovalRequest } from '../types';
+import { ApprovalPlatform, ApprovalRequest } from '../types';
 import { FileLogger } from '../memory/FileLogger';
 
 const APPROVAL_FILE = path.join(__dirname, '../../logs/approvals.json');
@@ -48,10 +48,14 @@ export const ApprovalStore = {
     content: string;
     agent: string;
     user: string;
+    brand?: string;
+    platform?: ApprovalPlatform;
+    pack_id?: string;
   }): ApprovalRequest {
     const approval: ApprovalRequest = {
       id: randomUUID(),
       ...opts,
+      platform: opts.platform ?? (opts.type === 'publish_telegram' ? 'telegram' : undefined),
       status: 'pending',
       created_at: new Date().toISOString(),
     };
@@ -96,5 +100,9 @@ export const ApprovalStore = {
   list(status?: 'pending' | 'approved' | 'rejected'): ApprovalRequest[] {
     const all = load();
     return status ? all.filter((a) => a.status === status) : all;
+  },
+
+  listByPack(packId: string): ApprovalRequest[] {
+    return load().filter((a) => a.pack_id === packId);
   },
 };

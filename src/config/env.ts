@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env'), override: true });
 
 export const ENV = {
   PORT: parseInt(process.env.PORT ?? '3000', 10),
@@ -12,12 +12,20 @@ export const ENV = {
   // LLM — optional; falls back to mock if absent
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001',
+  // Image generation — optional; ImageClient falls back gracefully if absent
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? '',
   // Apify — optional; falls back to mock if absent. Supports both APIFY_API_TOKEN and APIFY_TOKEN.
   APIFY_API_TOKEN: process.env.APIFY_API_TOKEN ?? process.env.APIFY_TOKEN ?? '',
   // Telegram — optional; falls back to mock if absent
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ?? '',
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID ?? '',
   ADMIN_TELEGRAM_CHAT_ID: process.env.ADMIN_TELEGRAM_CHAT_ID ?? '',
+  // Phase 7D-5: Telegram receive mode — 'longpoll' (default, dev) or 'webhook' (production HTTPS)
+  TELEGRAM_MODE: (process.env.TELEGRAM_MODE === 'webhook' ? 'webhook' : 'longpoll') as 'webhook' | 'longpoll',
+  TELEGRAM_WEBHOOK_URL: process.env.TELEGRAM_WEBHOOK_URL ?? '',
+  TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET ?? '',
+  SALESMARTLY_ENABLED: process.env.SALESMARTLY_ENABLED === '1',
+  SALESMARTLY_WEBHOOK_SECRET: process.env.SALESMARTLY_WEBHOOK_SECRET ?? '',
 } as const;
 
 export function validateEnv(): void {
@@ -34,8 +42,10 @@ export function logEnvStatus(): void {
     mockLlm:            process.env.MOCK_LLM === '1',
     telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
     hasAdminChatId:     !!process.env.ADMIN_TELEGRAM_CHAT_ID,
+    salesmartlyEnabled:  process.env.SALESMARTLY_ENABLED === '1',
     supabaseConfigured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
     hasAnthropicKey:    !!process.env.ANTHROPIC_API_KEY,
+    hasOpenAiKey:       !!process.env.OPENAI_API_KEY,
   };
   console.log(`[ENV] startup ${JSON.stringify(status)}`);
 }

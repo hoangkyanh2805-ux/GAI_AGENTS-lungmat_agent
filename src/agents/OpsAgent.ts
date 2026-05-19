@@ -43,7 +43,11 @@ export class OpsAgent implements SubAgent {
         addStep(ctx, { agent: this.name, action: 'approval_list', output: { count: approvals.length }, duration_ms: 0 });
         const shown = approvals.slice(0, 10);
         const list = shown
-          .map((a) => `• [${a.status}] \`${a.id}\` — ${a.type} by ${a.agent}`)
+          .map((a) => {
+            const plat = a.platform ? `/${a.platform}` : '';
+            const brand = a.brand ? ` ${a.brand}` : '';
+            return `• [${a.status}]${plat}${brand} \`${a.id}\` — ${a.agent}`;
+          })
           .join('\n');
         return this.ok(
           `*Approval Queue (${approvals.length}):*\n${list || '_(none)_'}`,
@@ -60,6 +64,7 @@ export class OpsAgent implements SubAgent {
           hasApifyToken:      !!(process.env.APIFY_API_TOKEN || process.env.APIFY_TOKEN),
           mockLlm:            process.env.MOCK_LLM === '1',
           telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+          hasAdminChatId:     !!process.env.ADMIN_TELEGRAM_CHAT_ID,
           supabaseConfigured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
           apifyActorId:       apifyDiag.apifyActorId,
           ...(apifyDiag.apifyErrorMessage ? { apifyLastError: apifyDiag.apifyErrorMessage } : {}),

@@ -3,8 +3,9 @@ import { JobQueue } from '../queue/JobQueue';
 import { addStep } from '../trace/ExecutionTrace';
 import { FileLogger } from '../memory/FileLogger';
 
-const DEFAULT_TOPICS = ['AI startup funding', 'crypto market', 'tech stocks'];
-const DEFAULT_TICKERS = ['BTC', 'ETH', 'SPY', 'AAPL'];
+/** Aligned with cron seeds in index.ts — gold / XAUUSD focus. */
+const DEFAULT_TOPICS = ['gold XAUUSD news Fed inflation DXY dollar'];
+const DEFAULT_TICKERS = ['XAUUSD'];
 
 export class DailyReportAgent implements SubAgent {
   readonly name = 'DailyReportAgent';

@@ -12,10 +12,16 @@
     "db:check":       "node scripts/runtime.js db:check",
     "db:seed":        "node scripts/runtime.js db:seed",
     "db:test-log":    "node scripts/runtime.js db:test-log",
-    "test:e2e-local": "node scripts/runtime.js test:e2e-local"
+    "test:e2e-local": "node scripts/runtime.js test:e2e-local",
+    "distill:lung":     "npx tsx scripts/distill-lung-chat.ts",
+    "build:ci":           "tsc",
+    "typecheck:ci":       "tsc --noEmit",
+    "start:ci":           "node dist/index.js",
+    "test:e2e:ci":        "ts-node scripts/e2e-local.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",
+    "openai": "^4.52.0",
     "@supabase/supabase-js": "^2.43.4",
     "axios": "^1.7.2",
     "cors": "^2.8.5",

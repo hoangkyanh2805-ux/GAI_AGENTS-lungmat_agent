@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ApprovalStore, AmbiguousPrefixError } from '../approval/ApprovalStore';
+import { publishApprovedContent, PublishError } from '../publish/telegramPublish';
 
 function handleStoreError(err: unknown, res: Response): void {
   if (err instanceof AmbiguousPrefixError) {
@@ -31,13 +32,37 @@ export function createApprovalRouter(): Router {
   });
 
   // POST /approval/:id/approve  — accepts full UUID or unique prefix
-  router.post('/:id/approve', (req: Request, res: Response): void => {
+  // Body optional: { reviewed_by, publish: true } — publish uses same path as /publish_telegram
+  router.post('/:id/approve', async (req: Request, res: Response): Promise<void> => {
     try {
-      const reviewedBy = (req.body as { reviewed_by?: string }).reviewed_by ?? 'human';
+      const body = req.body as { reviewed_by?: string; publish?: boolean };
+      const reviewedBy = body.reviewed_by ?? 'human';
       const approval = ApprovalStore.approve(req.params.id, reviewedBy);
       if (!approval) {
         res.status(404).json({ status: 'error', message: 'Approval not found or already reviewed' });
         return;
+      }
+      if (body.publish === true) {
+        const plat = approval.platform ?? 'telegram';
+        if (plat !== 'telegram') {
+          res.status(400).json({
+            status: 'error',
+            message: `Approval is for \`${plat}\` — set publish:false and copy to Typefully.`,
+            approval,
+          });
+          return;
+        }
+        try {
+          const published = await publishApprovedContent(approval);
+          res.json({ status: 'success', approval, published });
+          return;
+        } catch (err) {
+          if (err instanceof PublishError) {
+            res.status(400).json({ status: 'error', message: err.userMessage, approval });
+            return;
+          }
+          throw err;
+        }
       }
       res.json({ status: 'success', approval });
     } catch (err) {

@@ -1,0 +1,76 @@
+# Caddyfile — Lungmat Agent production reverse proxy
+# Deploy path: /etc/caddy/Caddyfile (symlink or copy from this file)
+# See docs/PRODUCTION_DEPLOY.md §4-5 for full setup.
+#
+# Architecture:
+#   Browser/Telegram --(TLS)--> Cloudflare --(Origin Cert TLS)--> Caddy :443 --(HTTP)--> agent :3000
+#
+# Auto-HTTPS off because Cloudflare handles browser TLS; we use the 15-year
+# Cloudflare Origin Cert for the CF <-> VPS hop (no Let's Encrypt renewals).
+
+{
+    # Global options
+    auto_https off
+    admin off
+    servers {
+        protocols h1 h2
+    }
+}
+
+agent.hoa-homes.com:443 {
+    tls /etc/ssl/cloudflare/cert.pem /etc/ssl/cloudflare/cert.key
+
+    # ---- Allowed routes (explicit whitelist) ----------------------------
+
+    # Public health check (used by Cloudflare + uptime monitors)
+    handle /health {
+        reverse_proxy localhost:3000
+    }
+
+    # Telegram webhook — preserve secret-token header for verification in-app
+    handle /telegram/webhook {
+        reverse_proxy localhost:3000 {
+            header_up X-Telegram-Bot-Api-Secret-Token {http.request.header.X-Telegram-Bot-Api-Secret-Token}
+        }
+    }
+
+    # Approval HTTP API (n8n, founder phone, external callers)
+    # Auth enforced by app middleware (x-agent-secret header)
+    handle /approval/* {
+        reverse_proxy localhost:3000
+    }
+
+    # Agent control plane
+    handle /agent/* {
+        reverse_proxy localhost:3000
+    }
+
+    # Command dispatch (HTTP equivalent of Telegram /command)
+    handle /command/* {
+        reverse_proxy localhost:3000
+    }
+
+    # ---- Catch-all deny (defense in depth) ------------------------------
+
+    handle {
+        respond "Not Found" 404
+    }
+
+    # ---- Logging --------------------------------------------------------
+
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 50mb
+            roll_keep 10
+            roll_keep_for 720h
+        }
+        format json
+        level INFO
+    }
+}
+
+# Plain HTTP -> HTTPS redirect. Rarely hit (Cloudflare strips most),
+# but defense in depth if anyone scans the origin IP directly.
+agent.hoa-homes.com:80 {
+    redir https://{host}{uri} permanent
+}

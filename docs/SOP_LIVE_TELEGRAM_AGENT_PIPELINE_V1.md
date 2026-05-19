@@ -111,7 +111,24 @@ https://api.telegram.org/bot<TOKEN>/getUpdates
 }
 ```
 
-Đó là TELEGRAM_CHAT_ID.
+Đó là TELEGRAM_CHAT_ID (channel/group nơi bot **publish** bài).
+
+---
+
+## Lấy ADMIN_TELEGRAM_CHAT_ID (DM admin — draft cron + nút Approve)
+
+Cần cho job tự động (`research`, `market_summary`) gửi draft vào **chat riêng** của admin, không phải channel.
+
+1. Mở chat **1-1** với bot (Start bot).
+2. Gửi một tin bất kỳ (ví dụ `/debug_env`).
+3. Mở `getUpdates` (cùng URL như trên).
+4. Tìm chat **private** với `"type": "private"` — `id` là số dương (ví dụ `123456789`).
+
+```env
+ADMIN_TELEGRAM_CHAT_ID=123456789
+```
+
+Nếu thiếu biến này: cron vẫn chạy nhưng **không** gửi DM approve — log: `ADMIN_TELEGRAM_CHAT_ID not set — skipping approval gate`.
 
 ---
 
@@ -129,6 +146,10 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 TELEGRAM_BOT_TOKEN=YOUR_TOKEN
 TELEGRAM_CHAT_ID=-100xxxxxxxxxx
+ADMIN_TELEGRAM_CHAT_ID=123456789
+
+APIFY_API_TOKEN=
+ANTHROPIC_API_KEY=
 
 MOCK_LLM=0
 ```
@@ -160,6 +181,45 @@ Nếu thấy:
 ```
 
 => server sống.
+
+---
+
+## 6.1 Verify env qua bot hoặc API
+
+### Telegram (nhanh)
+
+Gửi bot:
+
+```text
+/debug_env
+```
+
+Kiểm tra trong reply JSON:
+
+| Field | Mong đợi (live) |
+|-------|------------------|
+| `mockLlm` | `false` |
+| `telegramConfigured` | `true` |
+| `hasAdminChatId` | `true` |
+| `hasApifyToken` | `true` (nếu dùng research thật) |
+
+### PowerShell
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "$base/agent/command" `
+  -Headers @{"x-agent-secret"=$secret} `
+  -ContentType "application/json" `
+  -Body '{"command":"/debug_env","user":"ops","source":"sop","payload":{}}'
+```
+
+### Log startup
+
+Khi `npm run dev`, dòng:
+
+```text
+[ENV] startup {"hasAdminChatId":true,...}
+```
 
 ---
 
@@ -212,6 +272,19 @@ Copy full ID.
 
 ---
 
+# 8.1 Luồng publish thống nhất (một engine)
+
+Mọi cách publish đều gọi `src/publish/telegramPublish.ts` → `TelegramClient.sendMessage(TELEGRAM_CHAT_ID, content)`.
+
+| Cách | Khi nào dùng |
+|------|----------------|
+| **A — Hai bước HTTP** | `POST /approval/:id/approve` rồi `/publish_telegram` |
+| **A′ — Một bước HTTP** | `POST /approval/:id/approve` body `{ "publish": true }` |
+| **B — Một bước command** | `/approve_publish` + `approval_id` (nút Telegram DM dùng cách này) |
+| **C — Sau khi đã approve** | Chỉ `/publish_telegram` |
+
+---
+
 # 9. Publish Telegram thật
 
 ## Set ID
@@ -235,7 +308,19 @@ $body = @{
 
 ---
 
-## Publish
+## Publish (cách A — hai bước)
+
+Trước tiên approve (nếu chưa):
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "$base/approval/$id/approve" `
+  -Headers @{"x-agent-secret"=$secret} `
+  -ContentType "application/json" `
+  -Body '{"reviewed_by":"human"}'
+```
+
+Rồi publish:
 
 ```powershell
 Invoke-RestMethod -Method POST `
@@ -244,6 +329,63 @@ Invoke-RestMethod -Method POST `
 -ContentType "application/json" `
 -Body $body
 ```
+
+## Publish (cách A′ — một bước)
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "$base/approval/$id/approve" `
+  -Headers @{"x-agent-secret"=$secret} `
+  -ContentType "application/json" `
+  -Body '{"reviewed_by":"human","publish":true}'
+```
+
+## Publish (cách B — command)
+
+```powershell
+$body = @{
+  command="/approve_publish"
+  payload=@{ approval_id=$id }
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod -Method POST `
+  -Uri "$base/agent/command" `
+  -Headers @{"x-agent-secret"=$secret} `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+---
+
+# 9.1 Market summary (Phase 5B — XAUUSD / Yahoo)
+
+```powershell
+Invoke-RestMethod -Method POST `
+  -Uri "$base/agent/command" `
+  -Headers @{"x-agent-secret"=$secret} `
+  -ContentType "application/json" `
+  -Body '{"command":"/market_summary","user":"ops","source":"sop","payload":{"tickers":["XAUUSD"]}}'
+```
+
+Thành công khi reply có giá + phân tích tiếng Việt, không phụ thuộc Google scrape cho XAUUSD.
+
+---
+
+# 9.2 Cron / daily report (vàng)
+
+Server tự seed cron (sáng/tối `XAUUSD` + research gold). Cần:
+
+* Server chạy liên tục
+* `hasAdminChatId: true`
+* Admin bấm **Approve** trên DM → publish channel (cách B)
+
+Hoặc tay:
+
+```powershell
+Invoke-RestMethod -Method POST ... -Body '{"command":"/daily_report","user":"ops","source":"sop","payload":{}}'
+```
+
+Mặc định: 1 research topic gold + `market_summary` XAUUSD + `write_thread`.
 
 ---
 
@@ -330,7 +472,20 @@ Restart server.
 
 ---
 
-## 11.5 npm ENOENT package.json
+## 11.5 Scheduler không gửi draft admin
+
+### Nguyên nhân
+
+* `ADMIN_TELEGRAM_CHAT_ID` trống → `hasAdminChatId: false`
+* `MOCK_LLM=1` → Telegram receiver tắt (cron vẫn enqueue job)
+
+### Fix
+
+Set `ADMIN_TELEGRAM_CHAT_ID`, `MOCK_LLM=0`, restart. Kiểm tra `/debug_env`.
+
+---
+
+## 11.6 npm ENOENT package.json
 
 ### Nguyên nhân
 
@@ -398,7 +553,10 @@ Chỉ cần đổi:
 ```env
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
+ADMIN_TELEGRAM_CHAT_ID=
 AGENT_SHARED_SECRET=
 ```
+
+Tham chiếu kỹ thuật đầy đủ: `docs/architecture.md`.
 
 Các bước còn lại giữ nguyên.

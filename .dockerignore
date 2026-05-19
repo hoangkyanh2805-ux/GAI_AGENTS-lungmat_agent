@@ -1,0 +1,14 @@
+node_modules
+dist
+logs
+.git
+.github
+.env
+.env.*
+*.log
+.claude
+.cursor
+**/*.md
+!docs/DEPLOY.md
+scripts/runtime.js
+db/*.ts

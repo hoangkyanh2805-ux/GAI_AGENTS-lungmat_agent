@@ -22,6 +22,7 @@ export const COMMANDS: CommandRegistry = {
   MARKET_SUMMARY:    { command: '/market_summary',    description: 'Fetch market data and generate AI summary', agent: 'market_summary'     },
   // ── ThreadWriterAgent ─────────────────────────────────────────────────────
   WRITE_THREAD:      { command: '/write_thread',      description: 'Generate a Twitter thread draft (→ approval)', agent: 'thread_writer'  },
+  CONTENT:           { command: '/content',           description: 'Multi-brand pack: TG + X + Threads + YouTube Shorts script', agent: 'content' },
   // ── TelegramPublisherAgent ────────────────────────────────────────────────
   PUBLISH_TELEGRAM:  { command: '/publish_telegram',  description: 'Publish approved content to Telegram',     agent: 'telegram_publisher' },
   // ── DailyReportAgent ─────────────────────────────────────────────────────
@@ -35,4 +36,6 @@ export const COMMANDS: CommandRegistry = {
   DEBUG_ENV:         { command: '/debug_env',         description: 'Show env booleans (no secrets exposed)',   agent: 'ops'                },
   APPROVE_PUBLISH:   { command: '/approve_publish',   description: '(internal) Approve and publish a draft',  agent: 'ops'                },
   REJECT_PUBLISH:    { command: '/reject_publish',    description: '(internal) Reject a pending draft',       agent: 'ops'                },
+  // ── CoachAgent (admin DM only) ───────────────────────────────────────────
+  COACH:             { command: '/coach',             description: 'Lửng Mật coach — Media OS ops (admin DM)', agent: 'coach'              },
 };

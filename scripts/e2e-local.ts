@@ -103,6 +103,9 @@ function cmd(
 
 let lastTraceId   = '';
 let lastApprovalId = '';
+let lastContentPackId = '';
+let lastContentTgApprovalId = '';
+let lastContentXApprovalId = '';
 
 const CASES: Case[] = [
   // ── Health ──────────────────────────────────────────────────────────────────
@@ -149,6 +152,78 @@ const CASES: Case[] = [
     },
   },
   cmd('POST /memory_list → 200 success [MemoryAgent]', '/memory_list'),
+  // ── ContentAgent (Phase 7A) ─────────────────────────────────────────────────
+  {
+    name: 'POST /content alpha → 200 pack with youtube_pack [ContentAgent]',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/content',
+        user: 'e2e',
+        source: 'e2e',
+        payload: { brand: 'alpha', topic: 'liquidity sweep on XAUUSD' },
+      });
+      const meta = r.body.meta as JsonBody | undefined;
+      const pack = meta?.content_pack as JsonBody | undefined;
+      const yp = pack?.youtube_pack as JsonBody | undefined;
+      const approvals = meta?.approvals as JsonBody | undefined;
+      const tgId = approvals?.telegram as string | undefined;
+      const xId = approvals?.x as string | undefined;
+      if (tgId) {
+        lastContentTgApprovalId = tgId;
+        lastApprovalId = tgId;
+      }
+      if (xId) lastContentXApprovalId = xId;
+      if (typeof meta?.pack_id === 'string') lastContentPackId = meta.pack_id;
+
+      const passed =
+        r.status === 200 &&
+        r.body.status === 'success' &&
+        meta?.brand === 'alpha' &&
+        meta?.typefully_copy_ready === true &&
+        typeof tgId === 'string' &&
+        typeof xId === 'string' &&
+        typeof approvals?.threads === 'string' &&
+        typeof yp?.shorts_script === 'string' &&
+        String(yp.shorts_script).length > 20 &&
+        String(r.body.reply ?? '').includes('YouTube Shorts');
+      return {
+        passed,
+        detail: passed ? undefined : `meta: ${JSON.stringify(meta).slice(0, 280)}`,
+      };
+    },
+  },
+  {
+    name: 'POST /approval/:xId/approve publish:true → 400 non-TG [7B]',
+    async run() {
+      if (!lastContentXApprovalId) return { passed: false, detail: 'no x approval_id from /content' };
+      const r = await httpRequest('POST', `/approval/${lastContentXApprovalId}/approve`, AUTH, {
+        publish: true,
+        reviewed_by: 'e2e',
+      });
+      return {
+        passed: r.status === 400 && String(r.body.message ?? '').includes('Typefully'),
+        detail: `status=${r.status} body=${JSON.stringify(r.body).slice(0, 120)}`,
+      };
+    },
+  },
+  {
+    name: 'POST /approve_publish platform:x → Typefully handoff [7C]',
+    async run() {
+      if (!lastContentXApprovalId) return { passed: false, detail: 'no x approval_id' };
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/approve_publish',
+        user: 'e2e',
+        source: 'e2e',
+        payload: { approval_id: lastContentXApprovalId, platform: 'x' },
+      });
+      const reply = String(r.body.reply ?? '');
+      const passed =
+        r.status === 200 &&
+        r.body.status === 'success' &&
+        (reply.includes('Typefully') || reply.includes('approved'));
+      return { passed, detail: passed ? undefined : reply.slice(0, 200) };
+    },
+  },
   // ── Graceful fallback ─────────────────────────────────────────────────────────
   cmd('POST /unknown_cmd → 200 graceful', '/unknown_cmd'),
   // ── Backward compat ──────────────────────────────────────────────────────────
@@ -304,11 +379,20 @@ const CASES: Case[] = [
     },
   },
   {
-    name: 'POST /approval/:id/approve → 200 approved [REST]',
+    name: 'POST /approval/:id/approve publish:true → 200 published [REST unified]',
     async run() {
       if (!lastApprovalId) return { passed: false, detail: 'no approval_id from prior test' };
-      const r = await httpRequest('POST', `/approval/${lastApprovalId}/approve`, AUTH, { reviewed_by: 'e2e_tester' });
-      const passed = r.status === 200 && r.body.status === 'success' && (r.body.approval as JsonBody)?.status === 'approved';
+      const r = await httpRequest('POST', `/approval/${lastApprovalId}/approve`, AUTH, {
+        reviewed_by: 'e2e_tester',
+        publish: true,
+      });
+      const published = r.body.published as JsonBody | undefined;
+      const passed =
+        r.status === 200 &&
+        r.body.status === 'success' &&
+        (r.body.approval as JsonBody)?.status === 'approved' &&
+        published != null &&
+        typeof published.message_id !== 'undefined';
       return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
     },
   },
@@ -401,6 +485,41 @@ const CASES: Case[] = [
   },
   cmd('POST /approval_list → 200 success [OpsAgent]', '/approval_list',
     { expectBody: (b) => b.status === 'success' }),
+  {
+    name: 'POST /coach without admin chat_id → error [CoachAgent]',
+    async run() {
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/coach',
+        user: 'e2e',
+        source: 'e2e',
+        payload: { text: 'verify live?' },
+      });
+      const passed =
+        r.status === 200 &&
+        r.body.status === 'error' &&
+        String(r.body.agent ?? '') === 'CoachAgent' &&
+        String(r.body.reply ?? '').includes('ADMIN_TELEGRAM_CHAT_ID');
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
+  {
+    name: 'POST /coach with admin chat_id → 200 [CoachAgent]',
+    async run() {
+      const adminChat = process.env.ADMIN_TELEGRAM_CHAT_ID ?? 'e2e_admin_chat';
+      const r = await httpRequest('POST', '/command/command', AUTH, {
+        command: '/coach',
+        user: 'e2e',
+        source: 'e2e',
+        payload: { chat_id: adminChat, text: 'Phase hiện tại?' },
+      });
+      const passed =
+        r.status === 200 &&
+        r.body.status === 'success' &&
+        String(r.body.agent ?? '') === 'CoachAgent' &&
+        String(r.body.reply ?? '').length > 20;
+      return { passed, detail: passed ? undefined : JSON.stringify(r.body).slice(0, 200) };
+    },
+  },
   // /debug_env must return booleans + apifyActorId, no secret values
   {
     name: 'POST /debug_env → 200 env booleans + apifyActorId [OpsAgent]',
@@ -413,6 +532,7 @@ const CASES: Case[] = [
         typeof meta?.hasApifyToken === 'boolean' &&
         typeof meta?.mockLlm === 'boolean' &&
         typeof meta?.telegramConfigured === 'boolean' &&
+        typeof meta?.hasAdminChatId === 'boolean' &&
         typeof meta?.supabaseConfigured === 'boolean';
       const hasActorId = typeof meta?.apifyActorId === 'string' && String(meta.apifyActorId).length > 0;
       // Must not expose raw token values
@@ -457,6 +577,7 @@ async function main(): Promise<void> {
     ...process.env,
     PORT: String(TEST_PORT),
     NODE_ENV: 'test',
+    ADMIN_TELEGRAM_CHAT_ID: process.env.ADMIN_TELEGRAM_CHAT_ID ?? 'e2e_admin_chat',
     ...(MOCK_LLM ? { MOCK_LLM: '1' } : {}),
   };
 

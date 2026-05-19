@@ -2,6 +2,7 @@ import axios from 'axios';
 import { ENV } from '../config/env';
 import { FileLogger } from '../memory/FileLogger';
 import { TelegramClient } from './TelegramClient';
+import { parseApprovalCallback } from './telegramCallback';
 
 // Compatible with SupervisorAgent.process — see src/agents/SupervisorAgent.ts.
 // We use a minimal duck-typed interface so this module doesn't import the
@@ -18,7 +19,7 @@ interface TgUser { id: number; first_name?: string; username?: string }
 interface TgChat { id: number; type: string }
 interface TgMessage { message_id: number; from?: TgUser; chat: TgChat; text?: string; date: number }
 interface TgCallbackQuery { id: string; from: TgUser; message?: TgMessage; data?: string }
-interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallbackQuery }
+export interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallbackQuery }
 interface TgGetUpdatesResp { ok: boolean; result?: TgUpdate[]; description?: string }
 
 export class TelegramReceiver {
@@ -37,6 +38,13 @@ export class TelegramReceiver {
     }
     if (process.env.MOCK_LLM === '1') {
       FileLogger.info('[TelegramReceiver] disabled (MOCK_LLM=1)');
+      return;
+    }
+    // Phase 7D-5: when running in webhook mode, Telegram POSTs updates to us
+    // directly — the long-poll loop must NOT run (Telegram rejects getUpdates
+    // while a webhook is registered, and even if it didn't, we'd double-dispatch).
+    if (ENV.TELEGRAM_MODE === 'webhook') {
+      FileLogger.info('[7D-5] [TelegramReceiver] webhook mode — long-poll skipped');
       return;
     }
     this.running = true;
@@ -73,7 +81,11 @@ export class TelegramReceiver {
     }
   }
 
-  private async handleUpdate(update: TgUpdate): Promise<void> {
+  /**
+   * Dispatch a single Telegram update. Public so the /telegram/webhook route
+   * (Phase 7D-5) can reuse the same code path as the long-poll loop.
+   */
+  async handleUpdate(update: TgUpdate): Promise<void> {
     if (update.callback_query) {
       await this.handleCallbackQuery(update.callback_query);
       return;
@@ -119,27 +131,28 @@ export class TelegramReceiver {
     const user = String(cq.from.id);
     FileLogger.info('[TelegramReceiver] callback_query in', { user, data });
 
-    // data format: "approve:<approvalId>" or "reject:<approvalId>"
-    const colonIdx = data.indexOf(':');
-    const action     = colonIdx >= 0 ? data.slice(0, colonIdx) : data;
-    const approvalId = colonIdx >= 0 ? data.slice(colonIdx + 1) : '';
-
-    if (!approvalId || (action !== 'approve' && action !== 'reject')) {
+    const parsed = parseApprovalCallback(data);
+    if (!parsed) {
       await TelegramClient.answerCallbackQuery(cq.id, 'Unknown action');
       return;
     }
 
     try {
       const result = await this.processor.process(
-        action === 'approve' ? '/approve_publish' : '/reject_publish',
-        { approval_id: approvalId, original_message_id: cq.message?.message_id, original_chat_id: cq.message?.chat.id },
+        parsed.action === 'approve' ? '/approve_publish' : '/reject_publish',
+        {
+          approval_id: parsed.approvalId,
+          platform: parsed.platform,
+          original_message_id: cq.message?.message_id,
+          original_chat_id: cq.message?.chat.id,
+        },
         { user, source: 'telegram_callback' },
       );
       await TelegramClient.answerCallbackQuery(cq.id, result.reply.slice(0, 200));
 
       // Strip inline keyboard from the original draft + append status line
       if (cq.message) {
-        const statusTag  = action === 'approve' ? '✅ APPROVED' : '❌ REJECTED';
+        const statusTag  = parsed.action === 'approve' ? `✅ APPROVED (${parsed.platform})` : `❌ REJECTED (${parsed.platform})`;
         const originalText = cq.message.text ?? '';
         await TelegramClient.editMessageText(
           cq.message.chat.id,

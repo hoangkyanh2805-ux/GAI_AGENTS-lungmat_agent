@@ -64,8 +64,11 @@ export class MarketSummaryAgent implements SubAgent {
         })
         .join('\n');
 
-      // Append macro sections (raw — fed to Claude, not shown in reply)
+      // Append macro sections (raw — fed to Claude, not shown in reply).
+      // ALWAYS emit all 3 sections even when empty so Claude has something to anchor to.
       let macroText = '';
+
+      // (1) H1 intraday
       if (macroBundle.intraday.length > 0) {
         const recent = macroBundle.intraday.slice(-12);
         const lines = recent.map((k) => {
@@ -73,11 +76,19 @@ export class MarketSummaryAgent implements SubAgent {
           return `  ${hh} UTC: O=${k.o.toFixed(2)} H=${k.h.toFixed(2)} L=${k.l.toFixed(2)} C=${k.c.toFixed(2)}`;
         }).join('\n');
         macroText += `\n\nLast 12 H1 candles (UTC):\n${lines}`;
+      } else {
+        macroText += `\n\nLast 12 H1 candles (UTC): (KHÔNG có data — Yahoo H1 endpoint fail hoặc rate limited)`;
       }
+
+      // (2) Macro news
       if (macroBundle.news.length > 0) {
         const newsLines = macroBundle.news.slice(0, 5).map((a) => `  - ${a.title}`).join('\n');
         macroText += `\n\nMacro news headlines (Apify, 24h):\n${newsLines}`;
+      } else {
+        macroText += `\n\nMacro news headlines (Apify, 24h): (KHÔNG có headline mới — Apify scrapeNews trả 0 results)`;
       }
+
+      // (3) Economic calendar
       if (macroBundle.calendar.length > 0) {
         const evLines = macroBundle.calendar.slice(0, 6).map((e: CalendarEvent) => {
           const t = e.date_iso.slice(11, 16);
@@ -87,7 +98,7 @@ export class MarketSummaryAgent implements SubAgent {
         }).join('\n');
         macroText += `\n\nUSD high-impact events (next 24h, ForexFactory):\n${evLines}`;
       } else {
-        macroText += `\n\nUSD high-impact events (next 24h): (none scheduled)`;
+        macroText += `\n\nUSD high-impact events (next 24h, ForexFactory): (none scheduled or cuối tuần)`;
       }
 
       const fullDataText = `${dataText}${macroText}`;
@@ -100,27 +111,33 @@ export class MarketSummaryAgent implements SubAgent {
               'Bạn ở vai trò Forex/Commodities analyst chuyên gold (XAU/USD). Dữ liệu giá đến từ COMEX Gold Futures (GC=F).\n\n' +
               'Anh sẽ nhận 4 LỚP data:\n' +
               '  1. Spot + daily 5 candles — trend tổng quan\n' +
-              '  2. H1 intraday (12 candles gần nhất) — momentum trong ngày\n' +
-              '  3. Macro news headlines — Fed/CPI/DXY context\n' +
-              '  4. Economic calendar — events sắp tới trong 24h\n\n' +
-              'Format reply (Markdown):\n' +
+              '  2. H1 intraday (12 candles gần nhất) — momentum trong ngày (có thể "KHÔNG có data")\n' +
+              '  3. Macro news headlines — Fed/CPI/DXY context (có thể "KHÔNG có headline mới")\n' +
+              '  4. Economic calendar — events sắp tới trong 24h (có thể "none scheduled")\n\n' +
+              '🔒 RULE TUYỆT ĐỐI: PHẢI render đủ 6 sections theo ĐÚNG thứ tự dưới, kể cả khi data trống. ' +
+              'KHÔNG ĐƯỢC bỏ qua section nào. Nếu data section trống → vẫn render header + viết 1 câu placeholder bằng tiếng Việt.\n\n' +
+              'Format reply (Markdown) — 6 sections BẮT BUỘC:\n\n' +
               '## 📊 Trạng thái hiện tại\n' +
               '   [Spot price + change% + daily range. 1-2 câu nhận xét lầy nếu có drama. CHÍNH XÁC về số.]\n\n' +
               '## ⏱ H1 intraday\n' +
-              '   [Đọc 12 H1 candles: momentum, breakout/pullback, vùng giao tranh. Có thể slang.]\n\n' +
+              '   [Nếu có 12 H1 candles: đọc momentum, breakout/pullback, vùng giao tranh, slang OK.\n' +
+              '    Nếu data trống → viết: "Chưa pull được H1 data hôm nay — em chỉ đọc được daily, anh ngó TradingView H1 thêm nha."]\n\n' +
               '## 📰 Macro context\n' +
-              '   [Tóm 2-3 dòng từ news headlines. Nếu thấy keyword Fed/DXY/CPI liên quan price action, NÊU RÕ.]\n\n' +
+              '   [Nếu có news: tóm 2-3 dòng. Nếu thấy keyword Fed/DXY/CPI liên quan price action, NÊU RÕ.\n' +
+              '    Nếu trống → viết: "Macro yên ắng — không có headline mới về Fed/CPI/DXY trong 24h. Focus pure price action."]\n\n' +
               '## 📅 Events tới 24h\n' +
-              '   [List ngắn events high-impact. Đặc biệt note nếu < 6h tới — đó là trade-time risk.]\n\n' +
+              '   [Nếu có events: list ngắn. Đặc biệt note nếu < 6h tới — đó là trade-time risk.\n' +
+              '    Nếu trống → viết: "Lịch sạch trong 24h tới — không có event USD high-impact nào lịch. (Có thể cuối tuần)"]\n\n' +
               '## 🎯 Key levels & Sentiment\n' +
-              '   - Support: [từ candles thật, daily + H1]\n' +
+              '   - Support: [từ candles thật, daily + H1 nếu có]\n' +
               '   - Resistance: [tương tự]\n' +
               '   - Sentiment: [slang OK ở đây]\n\n' +
-              '## ⚠️ Cảnh báo (nếu có)\n' +
-              '   [Chỉ thêm khi có risk rõ — break support, event < 6h, news major]\n\n' +
+              '## ⚠️ Cảnh báo\n' +
+              '   [Nếu có risk rõ (break support, event < 6h, news major) — list cụ thể.\n' +
+              '    Nếu không có risk gấp → viết: "Chưa có risk gấp. Trade size nhỏ, stop chặt như mọi ngày."]\n\n' +
+              '⚠️ Một lần nữa: 6 sections PHẢI có TẤT CẢ. KHÔNG được skip bất kỳ section nào dù data trống.\n\n' +
               'KHÔNG đưa khuyến nghị buy/sell. KHÔNG nói "anh nên mua giá X". ' +
               'KHI events high-impact < 6h tới: cảnh báo KHÔNG hold position qua event. ' +
-              'KHI macro news không có hoặc không liên quan: viết "Macro yên ắng, focus pure price action". ' +
               'Sử dụng tiếng Việt thuần. KHÔNG chèn từ Hàn/Trung.',
             ),
           },

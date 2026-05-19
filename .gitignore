@@ -3,3 +3,24 @@ dist/
 logs/
 .env
 *.log
+
+# Windows metadata
+desktop.ini
+Desktop.ini
+
+# Telegram export (large; may contain PII)
+botlungmat/result.json
+botlungmat/stickers/
+botlungmat/video_files/
+
+# AI tool workspaces (worktrees, agent state, cursor rules)
+.claude/
+.cursor/
+
+# Production secrets
+.env.production
+infra/secrets/
+*.pem
+*.key
+!*.example.pem
+!*.example.key

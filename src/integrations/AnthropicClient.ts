@@ -25,6 +25,26 @@ function getClient(): Anthropic {
 function mockResponse(messages: LLMMessage[], opts: LLMOptions): string {
   const lastMsg = messages[messages.length - 1]?.content ?? '';
   const sys = (opts.system ?? '').toLowerCase();
+  if (sys.includes('content pack') || sys.includes('youtube_pack') || sys.includes('shorts_script')) {
+    const brand = sys.includes('raymond') ? 'raymond' : sys.includes('vip') ? 'vip10x' : 'alpha';
+    const topic = lastMsg.slice(0, 80) || 'XAUUSD gold';
+    return JSON.stringify({
+      telegram_brief: `*MOCK ${brand} TG*\n\n${topic}`,
+      x_thread: '1/ Mock X opener\n\n2/ Context\n\n3/ Takeaway\n\n4/ Detail\n\n5/ #XAUUSD #Gold',
+      threads_post: `Mock Threads — ${topic.slice(0, 100)}`,
+      youtube_pack: {
+        title: `[MOCK Shorts] ${topic.slice(0, 40)}`,
+        description: 'Mock YT description. Not financial advice.',
+        tags: ['XAUUSD', 'gold', brand],
+        shorts_script:
+          '[0-3s HOOK] "Ae thấy vàng đang nói gì không?"\n' +
+          '[3-20s] Mock chart context — liquidity / session.\n' +
+          '[20-50s] 2 điểm chính — không khuyến nghị entry.\n' +
+          '[50-60s] CTA + risk disclaimer.',
+        thumbnail_brief: 'Dark chart, bold hook text, gold accent',
+      },
+    });
+  }
   if (sys.includes('thread')) {
     return [
       '1/ The AI landscape is shifting fast — here\'s what you need to know. 🧵',
@@ -36,6 +56,12 @@ function mockResponse(messages: LLMMessage[], opts: LLMOptions): string {
   }
   if (sys.includes('market') || sys.includes('summary') || sys.includes('analyst')) {
     return 'MOCK MARKET SUMMARY: Key indices are showing mixed signals today. Tech sector leads with a +1.8% gain while energy remains flat. BTC holds above key support levels amid moderate volume. Outlook remains cautiously optimistic for the remainder of the week.';
+  }
+  if (sys.includes('lửng mật') || sys.includes('coach admin') || sys.includes('media os')) {
+    return (
+      'MOCK COACH (Lửng Mật): Anh chạy `/debug_env` trước — cần `mockLlm:false`, `hasAdminChatId:true`. ' +
+      'Verify live: market_summary 6 sections → `/content alpha …` → 3 nút approve. Chưa mở 7D cron trước verify. 🦡'
+    );
   }
   return `MOCK LLM RESPONSE: Processed "${lastMsg.slice(0, 60)}" — returning mock output for testing.`;
 }

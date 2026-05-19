@@ -1,9 +1,8 @@
 import { SubAgent, AgentMessage, AgentResponse, AgentRole, ExecutionContext } from '../types';
-import { TelegramClient } from '../integrations/TelegramClient';
 import { ApprovalStore } from '../approval/ApprovalStore';
 import { addStep, timed } from '../trace/ExecutionTrace';
 import { FileLogger } from '../memory/FileLogger';
-import { ENV } from '../config/env';
+import { publishApprovedContent, PublishError } from '../publish/telegramPublish';
 
 export class TelegramPublisherAgent implements SubAgent {
   readonly name = 'TelegramPublisherAgent';
@@ -20,48 +19,48 @@ export class TelegramPublisherAgent implements SubAgent {
     if (!approval) {
       return this.err(`Approval \`${approvalId}\` not found.`, [], ctx);
     }
-    if (approval.status === 'rejected') {
-      return this.err(`Approval \`${approvalId}\` was rejected.`, ['/write_thread'], ctx);
-    }
     if (approval.status === 'pending') {
       return {
         status: 'success',
-        reply: `⏳ Content is awaiting human approval.\n\nApprove: \`POST /approval/${approvalId}/approve\``,
-        next_actions: [`POST /approval/${approvalId}/approve`],
+        reply:
+          `⏳ Content is awaiting human approval.\n\n` +
+          `• One-step: \`/approve_publish\` with \`approval_id\`\n` +
+          `• Or: \`POST /approval/${approvalId}/approve\` then run \`/publish_telegram\` again`,
+        next_actions: [`/approve_publish`, `POST /approval/${approvalId}/approve`],
         agent: this.name,
         trace_id: ctx.trace_id,
         meta: { approval_id: approvalId, status: 'pending' },
       };
     }
 
-    // Approved — publish
     const chatId =
-      (message.payload.chat_id as string | undefined) ??
-      message.chat_id ??
-      (ENV.TELEGRAM_CHAT_ID || 'mock_chat');
+      (message.payload.chat_id as string | number | undefined) ??
+      message.chat_id;
 
     try {
       const { result, duration_ms } = await timed(() =>
-        TelegramClient.sendMessage(chatId, approval.content),
+        publishApprovedContent(approval, chatId),
       );
       addStep(ctx, {
         agent: this.name,
         action: 'publish_telegram',
-        input: { approval_id: approvalId, chat_id: chatId },
+        input: { approval_id: approvalId, chat_id: result.chat_id },
         output: { message_id: result.message_id },
         duration_ms,
       });
 
-      FileLogger.info('[TelegramPublisherAgent] published', { approval_id: approvalId, message_id: result.message_id });
       return {
         status: 'success',
         reply: `✅ Published to Telegram!\nMessage ID: \`${result.message_id}\``,
         next_actions: [],
         agent: this.name,
         trace_id: ctx.trace_id,
-        meta: { message_id: result.message_id, chat_id: chatId },
+        meta: { message_id: result.message_id, chat_id: result.chat_id },
       };
     } catch (err) {
+      if (err instanceof PublishError) {
+        return this.err(err.userMessage, approval.status === 'rejected' ? ['/write_thread'] : [], ctx);
+      }
       FileLogger.error('[TelegramPublisherAgent] publish failed', err);
       return this.err('Telegram publish failed.', [], ctx);
     }

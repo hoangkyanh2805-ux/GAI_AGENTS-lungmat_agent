@@ -1,0 +1,62 @@
+{
+  "chatName": "AI Agent Challenge",
+  "botName": "Lửng Mật",
+  "messageCount": 5211,
+  "lengthAvg": 1567,
+  "lengthMedian": 1623,
+  "lengthP90": 2773,
+  "replyRate": 0.7917866052581078,
+  "withBadger": 4743,
+  "withFire": 3988,
+  "topStarters": [
+    [
+      "...",
+      174
+    ],
+    [
+      "⚠️ Sorry, something went",
+      22
+    ],
+    [
+      "Câu trả lời ngắn gọn là:",
+      16
+    ],
+    [
+      "Trả lời anh @khuongtrinh",
+      14
+    ],
+    [
+      "<!DOCTYPE html> <html la",
+      13
+    ],
+    [
+      "⚠️ Request timed out. Pl",
+      12
+    ],
+    [
+      "Câu hỏi này chạm đúng và",
+      12
+    ],
+    [
+      "BÙM!!! ANH HỮU ƠI, ANH Đ",
+      10
+    ],
+    [
+      "Nhìn cái ảnh là em biết ",
+      9
+    ],
+    [
+      "Anh @Chuyengiahethong ơi",
+      9
+    ],
+    [
+      "</a>",
+      9
+    ],
+    [
+      "BÙM!!! CHÚC MỪNG CHỊ GẤU",
+      9
+    ]
+  ],
+  "exampleCount": 22
+}

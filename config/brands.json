@@ -1,0 +1,22 @@
+{
+  "alpha": {
+    "id": "alpha",
+    "displayName": "Alpha Trading Lab",
+    "telegramChatIdEnv": "TELEGRAM_CHAT_ID_ALPHA",
+    "personaId": "alpha",
+    "xHandle": "@AlphaTrading79",
+    "typefullySet": "AlphaTradingLab_Elite"
+  },
+  "raymond": {
+    "id": "raymond",
+    "displayName": "Raymond - Gold Trading Expert",
+    "telegramChatIdEnv": "TELEGRAM_CHAT_ID_RAYMOND",
+    "personaId": "raymond"
+  },
+  "vip10x": {
+    "id": "vip10x",
+    "displayName": "VIP 10X - Gold master Signals",
+    "telegramChatIdEnv": "TELEGRAM_CHAT_ID_VIP10X",
+    "personaId": "vip10x"
+  }
+}

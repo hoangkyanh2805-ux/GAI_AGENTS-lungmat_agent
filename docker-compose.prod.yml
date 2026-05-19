@@ -1,0 +1,38 @@
+# Production override for docker-compose.yml
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# See docs/PRODUCTION_DEPLOY.md §7 for full deploy workflow.
+#
+# Differences from base compose:
+#   - Port bound to 127.0.0.1 (Caddy is the only gateway, port 3000 not exposed publicly)
+#   - Hardcoded NODE_ENV/MOCK_LLM/TELEGRAM_MODE (defense in depth — even if .env wrong)
+#   - JSON log driver with rotation (10MB x 5 files = 50MB cap per container)
+#   - Stricter healthcheck (faster failure detection)
+#   - restart: unless-stopped (survives daemon restart, but respects manual stop)
+
+services:
+  agent:
+    restart: unless-stopped
+    ports:
+      # Bind localhost only — Caddy reverse-proxies from :443 -> :3000
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      MOCK_LLM: "0"
+      TELEGRAM_MODE: webhook
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

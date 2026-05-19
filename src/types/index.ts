@@ -15,10 +15,12 @@ export type AgentRole =
   | 'research'
   | 'market_summary'
   | 'thread_writer'
+  | 'content'
   | 'telegram_publisher'
   | 'daily_report'
   | 'rag'
-  | 'ops';
+  | 'ops'
+  | 'coach';
 
 // ── Incoming message (canonical shape for all agent inputs) ──────────────────
 export interface AgentMessage {
@@ -169,7 +171,7 @@ export interface AgentEventEntry {
 
 // ── Job queue ─────────────────────────────────────────────────────────────────
 export type JobStatus = 'pending' | 'running' | 'done' | 'failed';
-export type JobType = 'research' | 'market_summary' | 'write_thread' | 'publish' | 'daily_report';
+export type JobType = 'research' | 'market_summary' | 'write_thread' | 'publish' | 'daily_report' | 'content';
 
 export interface Job {
   id: string;
@@ -200,6 +202,8 @@ export interface RAGSearchResult {
 }
 
 // ── Approval ──────────────────────────────────────────────────────────────────
+export type ApprovalPlatform = 'telegram' | 'x' | 'threads' | 'youtube';
+
 export interface ApprovalRequest {
   id: string;
   trace_id: string;
@@ -207,6 +211,12 @@ export interface ApprovalRequest {
   content: string;
   agent: string;
   user: string;
+  /** Media OS brand — routes TG publish to TELEGRAM_CHAT_ID_<BRAND> */
+  brand?: string;
+  /** Target channel — TG auto-publish; x/threads = Typefully copy handoff (7B/7C) */
+  platform?: ApprovalPlatform;
+  /** Groups TG + X + Threads approvals from one /content run */
+  pack_id?: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   reviewed_at?: string;
