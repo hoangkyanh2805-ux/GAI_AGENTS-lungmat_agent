@@ -6,19 +6,17 @@
 
 ---
 
-## 1. Snapshot giai đoạn (2026-05)
+## 1. Snapshot giai đoạn (2026-05-19)
 
 | Giai đoạn | Trạng thái | Ghi chú |
 |-----------|------------|---------|
-| Phase 1–6 | Code + infra trong repo | Macro summary, Docker/CI, Yahoo map… |
-| **Media OS pivot** | Đã chốt | 3 brand: Alpha, Raymond, VIP 10X |
-| **7A** `/content` | Code **done** | Pack TG + X + Threads + YouTube Shorts script |
-| **7B** multi-approve | Code **done** | Nút TG / X / Threads trên admin DM |
-| **7C** Typefully | Code **done** + SOP | Copy handoff; API Typefully tuỳ chọn |
-| **Verify live Telegram** | **Pending** | [VERIFY_LIVE_TELEGRAM.md](./VERIFY_LIVE_TELEGRAM.md) |
-| **7D** | Chưa làm | Cron `/content` 3 brand, dọn lệnh legacy |
+| Phase 1–7C (lungmat) | **Closed** (verify live 2026-05-16) | `/content`, approve, Typefully legacy |
+| **GoClaw runtime** | **Prod** | Linh Cẩu `@linhcau79_bot` — [`GOCLAW_RUNTIME_GUIDE.md`](./GOCLAW_RUNTIME_GUIDE.md) |
+| **GoClaw + Zernio pilot** | **Active** | P4 Skipped · P5–P7 Cowork — [`briefs/goclaw-claude-cowork-handoff-2026-05-19.md`](./briefs/goclaw-claude-cowork-handoff-2026-05-19.md) |
+| **7D lungmat VPS** | Paused | GoClaw Cron thay prod |
+| **ClaudeKit Engineer** | Optional ($99) | Plan: [`CLAUDEKIT_ENGINEER_PLAN.md`](./CLAUDEKIT_ENGINEER_PLAN.md) |
 
-**Chốt:** Pipeline multi-brand + approve theo kênh **đã code**; tiếp theo **verify Telegram** → **7D** → deploy ổn định.
+**Chốt:** Linh Cẩu + Alpha media = **GoClaw**. Repo = Skill export + dev. **Cowork** = handoff brief 2026-05-19. Worklog: [`ai-worklog/sessions/2026-05-19-goclaw-runtime-cowork-handoff.md`](./ai-worklog/sessions/2026-05-19-goclaw-runtime-cowork-handoff.md).
 
 ---
 
@@ -39,8 +37,9 @@
 | Làm | Không làm |
 |-----|-----------|
 | Sửa `src/`, `docs/architecture.md` | Chiến lược brand dài hạn |
+| GoClaw ops qua **`goclaw-mcp`** (`.cursor/mcp.json.example`) | Đoán Cron/Vault — đọc `GOCLAW_RUNTIME_GUIDE.md` |
 | Debug MOCK_LLM, port, callbacks | Trading / signal sale |
-| `docs/ai-worklog/` sau phiên quan trọng | Commit `.env` |
+| `docs/ai-worklog/` sau phiên quan trọng | Commit `.env` / `mcp.json` có token |
 
 ### Claude Code (CLI — song song Cursor)
 
@@ -49,7 +48,7 @@
 | Implement / refactor / test trên cùng repo | Thay Cowork verify checklist |
 | Dùng `CLAUDE.md` + [claude-code/COMMANDS_MAP.md](./claude-code/COMMANDS_MAP.md) | Duplicate Hermes agents trong `src/agents/` |
 
-**Không bắt buộc mua ClaudeKit** — map pattern SDLC trong `COMMANDS_MAP.md` là khung port tự chủ.
+**Không bắt buộc mua ClaudeKit** — map pattern SDLC trong `COMMANDS_MAP.md` là khung port tự chủ. Nếu mua: [`CLAUDEKIT_ENGINEER_PLAN.md`](./CLAUDEKIT_ENGINEER_PLAN.md).
 
 ### Claude (chat — chiến lược / brief)
 
@@ -70,7 +69,9 @@ PROJECT_STATUS.md (SSOT)
     └─ Claude chat → brand narrative
     │
     ▼
-Telegram admin approve → Typefully + YouTube (founder)
+GoClaw Cron → admin duyệt → Zernio (X/Threads) + YouTube Studio
+    │
+    └─ Claude Code (+ ClaudeKit optional) → repo Skill export, E2E, docs
 ```
 
 **Mở session (mọi tool):** đọc `PROJECT_STATUS.md` trước.  

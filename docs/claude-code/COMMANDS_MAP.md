@@ -20,6 +20,9 @@ Xác nhận phase. Không sửa Router/Supervisor trừ khi task ghi rõ.
 
 4. Sau session: cập nhật `PROJECT_STATUS.md` + `docs/ai-worklog/INDEX.md`.
 
+**GoClaw pilot active:** Cowork → [`alpha-telegram-approval-cowork-brief.md`](../briefs/alpha-telegram-approval-cowork-brief.md).  
+**Team Orchestrator:** Claude Code → [`goclaw-media-os-orchestrator-claude-code-brief.md`](../briefs/goclaw-media-os-orchestrator-claude-code-brief.md).
+
 ---
 
 ## 2. Map pattern → Media OS (bảng chính)
@@ -32,7 +35,7 @@ Xác nhận phase. Không sửa Router/Supervisor trừ khi task ghi rõ.
 | **test** | `npm run test:e2e-local` (MOCK_LLM=1) | Terminal | Port 3099 |
 | **review** | Đọc diff; đối chiếu §14 publish trong `architecture.md` | Claude Code | |
 | **debug** | `/debug_env`; log `[ENV] startup`; port 3000, MOCK_LLM | Cowork + Cursor | |
-| **docs** | Cập nhật `architecture.md` nếu đổi hành vi; `ai-worklog` session | Cursor | |
+| **docs** | Cập nhật `architecture.md` nếu đổi hành vi lungmat; GoClaw pilot → `SOP_GoClaw_Zernio_PUBLISH.md` | Cursor | |
 | **git** | Commit khi founder yêu cầu; không commit `.env` | Human / Cursor | |
 
 ---
@@ -107,13 +110,17 @@ Cowork: docs/cowork/PLAYBOOK.md
 
 ---
 
-## 7. Nếu sau này mua ClaudeKit Engineer
+## 7. ClaudeKit Engineer ($99) — khi nào mua
+
+**Plan đầy đủ:** [`docs/CLAUDEKIT_ENGINEER_PLAN.md`](../CLAUDEKIT_ENGINEER_PLAN.md)
 
 | Kit asset | Port vào repo |
 |-----------|----------------|
-| Slash commands | Bổ sung cột vào bảng §2 — **không** trùng tên với `/content` Hermes |
-| Agent roles | Map vào `docs/cowork/PLAYBOOK.md` + Cursor rules — **không** duplicate `src/agents/` |
-| CLAUDE.md templates | Merge vào root `CLAUDE.md` |
+| Slash commands (dev) | Bổ sung cột §2 — **prefix/không trùng** `/content`, `/coach` Hermes |
+| Agent roles (planner, tester, docs-manager…) | Map workflow dev — **không** duplicate `src/agents/` |
+| CLAUDE.md templates | Merge root `CLAUDE.md` sau sandbox `ck new` |
+
+**Thứ tự:** Phase 0 thử Claude Code miễn phí → GoClaw Alpha pilot (Cowork) → mua $99 nếu dùng Code ≥2 buổi/tuần. **Không** mua Bundle Marketing ($149) lúc này.
 
 Giữ **một** SSOT: `PROJECT_STATUS.md`.
 

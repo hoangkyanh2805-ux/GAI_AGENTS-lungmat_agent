@@ -41,6 +41,7 @@ import { TelegramReceiver } from './integrations/TelegramReceiver';
 import { TelegramClient } from './integrations/TelegramClient';
 import { ApprovalStore } from './approval/ApprovalStore';
 import { createTelegramWebhookRouter } from './routes/telegramWebhook';
+import { createSalesMartlyRouter } from './routes/salesmartly';
 
 validateEnv();
 logEnvStatus();
@@ -243,6 +244,9 @@ app.use('/schedule', createScheduleRouter());
 // Phase 7D-5: Telegram webhook route — mounted on app (not behind a prefix)
 // because Telegram POSTs to a fixed URL. Auth is via X-Telegram-Bot-Api-Secret-Token.
 app.use(createTelegramWebhookRouter(telegramReceiver));
+
+// SalesMartly hybrid — HOT_LEAD / support → admin TG (see docs/SALESMARTLY_GOCLAW_HUMAN_TELEGRAM_DM.md)
+app.use(createSalesMartlyRouter());
 
 app.listen(ENV.PORT, () => {
   FileLogger.info('Lungmat Agent started', {

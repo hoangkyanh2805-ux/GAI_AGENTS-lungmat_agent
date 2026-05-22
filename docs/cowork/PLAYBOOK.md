@@ -10,15 +10,18 @@
 Paste đầu chat Cowork:
 
 ```text
-Đọc @PROJECT_STATUS.md và @docs/cowork/PLAYBOOK.md.
-Xác nhận phase + blocker. Đợi lệnh tiếp theo.
+Đọc @docs/briefs/goclaw-claude-cowork-handoff-2026-05-19.md
+@PROJECT_STATUS.md @docs/PILOT_ALPHA_AUDIT_STATUS.md
+Xác nhận phase + 3 việc tiếp theo. Đợi Founder.
 ```
 
 | Đọc thêm nếu… | File |
 |----------------|------|
 | Align context Phase 6 vs 7 | `docs/COWORK_ALIGNMENT_QA.md` |
 | Verify Telegram | `docs/VERIFY_LIVE_TELEGRAM.md` |
-| Typefully sau approve X | `docs/SOP_TYPEFULLY_HANDOFF.md` |
+| **GoClaw Alpha pilot** | **`docs/briefs/goclaw-claude-cowork-handoff-2026-05-19.md`** · `docs/GOCLAW_RUNTIME_GUIDE.md` · `docs/PILOT_ALPHA_AUDIT_STATUS.md` |
+| Typefully legacy (backup) | `docs/SOP_TYPEFULLY_HANDOFF.md` |
+| GoClaw + Zernio publish | `docs/SOP_GoClaw_Zernio_PUBLISH.md` |
 
 ---
 
@@ -26,11 +29,11 @@ Xác nhận phase + blocker. Đợi lệnh tiếp theo.
 
 | Làm | Không làm |
 |-----|-----------|
-| Chạy checklist verify, nhắc founder paste output | Sửa `RouterAgent`, `SupervisorAgent`, `index.ts` cron (giao Cursor) |
-| Patch nhỏ prompt trong `MarketSummaryAgent` (đã có precedent Phase 6) | Tạo `ContentAgent` từ đầu — đã có trong repo |
-| HTTP trigger `/command/command` (n8n) với payload chuẩn | Auto-approve production, post TG không người |
-| Brief cho Cursor / Claude Code khi cần feature | Copy token, chat ID vào chat |
-| Cập nhật nhắc founder: `PROJECT_STATUS` + `ai-worklog` cuối ngày | Commit `.env` |
+| Dẫn Founder **GoClaw Alpha pilot** (Vault, Zernio, Cron, E2E) | Sửa `ContentAgent.ts`, deploy lungmat VPS prod |
+| Chạy checklist verify lungmat local | Auto-approve Zernio publish không admin OK |
+| Patch nhỏ prompt trong `MarketSummaryAgent` (đã có precedent Phase 6) | Paste API key vào chat |
+| Brief cho Cursor khi cần export Skill / docs repo | Commit `.env` |
+| Cập nhật `PROJECT_STATUS` + pilot report template | |
 
 ---
 
@@ -50,7 +53,18 @@ Theo thứ tự [`VERIFY_LIVE_TELEGRAM.md`](../VERIFY_LIVE_TELEGRAM.md):
 
 ---
 
-## 4. HTTP enqueue (sau verify, trước 7D cron)
+## 3b. GoClaw Alpha pilot (ưu tiên 2026-05-19)
+
+**Brief:** [`docs/briefs/goclaw-alpha-pilot-cowork-brief.md`](../briefs/goclaw-alpha-pilot-cowork-brief.md)  
+**Checklist:** [`docs/GOCLAW_ALPHA_PILOT_CHECKLIST.md`](../GOCLAW_ALPHA_PILOT_CHECKLIST.md)
+
+Cowork dẫn Founder P0→P7 trên UI GoClaw + Zernio. Không dùng n8n/Typefully cho pilot trừ backup.
+
+Report cuối session: template trong brief §5.
+
+---
+
+## 4. HTTP enqueue (legacy — lungmat local dev)
 
 ```http
 POST http://localhost:3000/command/command
@@ -68,8 +82,8 @@ Content-Type: application/json
 }
 ```
 
-- Cron **không** auto-post TG — founder duyệt trên admin DM.
-- Chi tiết API: `docs/architecture.md`.
+- Cron **không** auto-post — founder duyệt trên admin DM.
+- **Production pilot:** GoClaw Cron + Zernio — không dùng block này cho Alpha pilot.
 
 ---
 

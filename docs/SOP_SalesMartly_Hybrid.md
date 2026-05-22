@@ -1,13 +1,16 @@
 # SOP SalesMartly Hybrid Integration
 
+> **SSOT chiến lược (2026-05-19):** [`SWOT_HYBRID_1TO1_SALESMARTLY_GOCLAW.md`](./SWOT_HYBRID_1TO1_SALESMARTLY_GOCLAW.md) — Phương án **H: Hybrid Hub**  
+> CRM: [SalesMartly contact/all](https://app.salesmartly.com/next/contact/all) · AI: GoClaw Brand CSKH · Human: assign HOT trong SM
+
 ## Mục tiêu
 
-Kết hợp `SalesMartly` làm front-line sales automation với `linhcau79_ok` / `lungmat-agent` làm expert trading/content.
-Mục tiêu là:
-- Giữ SalesMartly tiếp khách 1:1
-- Chuyển các yêu cầu trading/content chuyên sâu sang Linh Cẩu
-- Human handler xử lý lead nóng, approval, follow-up
-- Duy trì kiểm soát nội dung publish và không để Linh Cẩu tự chat free-text
+Kết hợp **SalesMartly** (inbox + CRM SSOT) + **GoClaw** (AI CSKH 24/7, Digitop BĐS UC-01) + **Human** (tư vấn/chốt 1:1).
+
+- SalesMartly: gom đa kênh, tag, assign — **không** thay bằng Zalo cá nhân
+- GoClaw Brand CSKH: qualify + FAQ + compliance — **không** dùng Linh Cẩu cho sales
+- Human: HOT lead, negotiation, khiếu nại — trả lời **trong** SalesMartly UI
+- Trading insight sâu: edu snippet / redirect Linh Cẩu — **không** auto `/content` publish từ sales chat
 
 ## Tổng quan luồng
 

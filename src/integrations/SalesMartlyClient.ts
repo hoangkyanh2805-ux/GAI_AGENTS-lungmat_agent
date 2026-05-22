@@ -1,5 +1,6 @@
 import { ENV } from '../config/env';
 import { FileLogger } from '../memory/FileLogger';
+import { TelegramClient } from './TelegramClient';
 
 export interface SalesMartlyPayload {
   secret?: string;
@@ -8,6 +9,8 @@ export interface SalesMartlyPayload {
   category?: string;
   topic?: string;
   notes?: string;
+  /** e.g. `telegram` — project scope: TG DM only */
+  channel?: string;
   customer?: {
     name?: string;
     phone?: string;
@@ -61,26 +64,44 @@ export class SalesMartlyClient {
   }
 
   private static async dispatchToAgent(payload: SalesMartlyPayload, context: Record<string, unknown>): Promise<void> {
-    FileLogger.info('[SalesMartlyClient] dispatching to agent', { intent: payload.intent, topic: payload.topic, conversation_id: payload.conversation_id });
-
-    // TODO: wire this into the supervisor / agent command dispatch path.
-    // Example:
-    // await SupervisorAgent.process({
-    //   id: crypto.randomUUID(),
-    //   content: payload.topic ?? 'salesmartly request',
-    //   command: '/content',
-    //   payload: { payload, context },
-    //   user: `salesmartly:${payload.conversation_id}`,
-    //   source: 'salesmartly',
-    //   timestamp: new Date().toISOString(),
-    // }, createContext(...));
+    FileLogger.info('[SalesMartlyClient] insight/content request (GoClaw CSKH path)', {
+      intent: payload.intent,
+      topic: payload.topic,
+      conversation_id: payload.conversation_id,
+      channel: payload.channel ?? 'telegram',
+      context,
+    });
+    // Intentionally no SupervisorAgent /content — sales TG DM handled by GoClaw CSKH + SM UI.
+    // See docs/SALESMARTLY_GOCLAW_HUMAN_TELEGRAM_DM.md
   }
 
   private static async notifyHumanHandler(payload: SalesMartlyPayload, context: Record<string, unknown>): Promise<void> {
-    FileLogger.info('[SalesMartlyClient] notify human handler', { intent: payload.intent, conversation_id: payload.conversation_id });
+    FileLogger.info('[SalesMartlyClient] notify human handler', {
+      intent: payload.intent,
+      conversation_id: payload.conversation_id,
+    });
 
-    // TODO: notify admin or human handler through Telegram / CRM / task queue.
-    // Example:
-    // await TelegramClient.sendMessage(ENV.ADMIN_TELEGRAM_CHAT_ID, messageText);
+    const admin = ENV.ADMIN_TELEGRAM_CHAT_ID?.trim();
+    if (!admin) {
+      FileLogger.error('[SalesMartlyClient] HOT_LEAD but ADMIN_TELEGRAM_CHAT_ID unset');
+      return;
+    }
+
+    const name = payload.customer?.name ?? '—';
+    const phone = payload.customer?.phone ?? '—';
+    const brand = (payload.metadata?.brand as string | undefined) ?? '—';
+    const channel = payload.channel ?? 'telegram';
+    const topic = payload.topic ?? payload.notes ?? '—';
+
+    const text =
+      `🔥 *${payload.intent}* — SalesMartly\n` +
+      `Channel: ${channel}\n` +
+      `Brand: ${brand}\n` +
+      `Conversation: \`${payload.conversation_id}\`\n` +
+      `Khách: ${name} / ${phone}\n` +
+      `Nội dung: ${topic}\n\n` +
+      `_Trả lời trong SalesMartly (TG DM). Assign self → tắt AI._`;
+
+    await TelegramClient.sendMessage(admin, text);
   }
 }

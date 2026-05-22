@@ -17,7 +17,8 @@
     "build:ci":           "tsc",
     "typecheck:ci":       "tsc --noEmit",
     "start:ci":           "node dist/index.js",
-    "test:e2e:ci":        "ts-node scripts/e2e-local.ts"
+    "test:e2e:ci":        "ts-node scripts/e2e-local.ts",
+    "alpha:pack":         "npx tsx scripts/alpha-generate-pack.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",

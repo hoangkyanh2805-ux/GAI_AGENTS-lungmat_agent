@@ -2,7 +2,16 @@
 
 > **Mục đích file này:** Tài liệu tham chiếu duy nhất (single source of truth) mô tả **toàn bộ logic** của hệ thống. Khi làm việc với AI hoặc developer mới, **chỉ cần đọc file này** — không cần dựa vào lịch sử chat.
 >
-> **Cập nhật lần cuối:** 2026-05-15 · **Version runtime:** 1.0.0 · **E2E:** 39/39 passing (`scripts/e2e-local.ts`)
+> **Cập nhật lần cuối:** 2026-05-19 · **Version runtime:** 1.0.0 · **E2E:** 39/39 passing (`scripts/e2e-local.ts`)
+
+### Production vs repo (2026-05-19)
+
+| Layer | Runtime |
+|-------|---------|
+| **Content publish prod** | GoClaw + Zernio (X, Threads, YouTube meta) — [`SOP_GoClaw_Zernio_PUBLISH.md`](./SOP_GoClaw_Zernio_PUBLISH.md) |
+| **GoClaw runtime map** | Linh Cẩu + Vault + agents — [`GOCLAW_RUNTIME_GUIDE.md`](./GOCLAW_RUNTIME_GUIDE.md) · upstream [docs.goclaw.sh](https://docs.goclaw.sh) |
+| **This repo (lungmat-agent)** | Persona/schema source, local `/content` test, E2E, `ImageClient` gpt-image-2 |
+| **Legacy** | Typefully handoff Phase 7C — backup only |
 
 ---
 
@@ -978,13 +987,16 @@ Template: `.env.example`
 
 | Tài liệu | Nội dung |
 |----------|----------|
-| `docs/PHASE_STATUS.md` | Phase đã xong, E2E count, next steps |
-| `docs/NEXT_STEPS.md` | Checklist verify live + Phase 6 |
-| `docs/DEPLOY.md` | VPS Docker deploy |
-| `docs/PHASE_6_PLAN.md` | Phase 6 scope, chi phí |
-| `docs/ROADMAP.md` | Vision dài hạn Phase 6–10 |
-| `docs/SOP_LIVE_TELEGRAM_AGENT_PIPELINE_V1.md` | Hướng dẫn vận hành Telegram thật (PowerShell) |
-| `docs/SUPABASE_SCHEMA.sql` | Copy DDL (mirror db/schema.sql) |
+| `PROJECT_STATUS.md` | **SSOT** trạng thái dự án |
+| `docs/PHASE_STATUS.md` | Phase closed / GoClaw pilot active |
+| `docs/NEXT_STEPS.md` | Redirect → GoClaw Alpha pilot |
+| `docs/GOCLAW_ALPHA_PILOT_CHECKLIST.md` | Pilot checklist 1 trang |
+| `docs/SOP_GoClaw_Zernio_PUBLISH.md` | Publish prod GoClaw + Zernio |
+| `docs/goclaw-export/` | Skill paste GoClaw UI (Linh Cẩu, Alpha Writer, CSKH) |
+| `docs/GOCLAW_RUNTIME_GUIDE.md` | Map repo ↔ GoClaw + MCP Cursor |
+| `docs/XAUUSD_MEDIA_OS.md` | Constitution §2.5 topology |
+| `docs/DEPLOY.md` | lungmat VPS — archive/reference |
+| `docs/SOP_TYPEFULLY_HANDOFF.md` | Typefully legacy backup |
 
 ### Đã verify (production-adjacent)
 

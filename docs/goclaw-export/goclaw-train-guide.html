@@ -1,0 +1,2705 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoClaw — Hướng dẫn Train Agent</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #faf6f1;
+  --bg-card: #ffffff;
+  --fg: #2a1f17;
+  --muted: #6b5d4f;
+  --accent: #d97706;
+  --accent-soft: #fef3c7;
+  --accent-active: #fde68a;
+  --border: #e8dfd2;
+  --code-bg: #2d1b0e;
+  --code-fg: #ffd9a3;
+}
+html { scroll-behavior: smooth; scroll-padding-top: 20px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.65;
+  font-size: 16px;
+}
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 320px;
+  background: linear-gradient(180deg, #fff8ee 0%, #faf0dd 100%);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 24px 18px;
+  flex-shrink: 0;
+}
+.sidebar h2 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--accent);
+}
+.search-box {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 100%;
+  font-size: 14px;
+  background: white;
+  font-family: inherit;
+}
+.search-box:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.toc-root { list-style: none; padding-left: 0; }
+.toc-root > li { margin-bottom: 12px; }
+.toc-file {
+  display: block;
+  font-weight: 600;
+  color: var(--fg);
+  text-decoration: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.toc-file:hover { background: var(--accent-soft); color: var(--accent); }
+.toc-file.active { background: var(--accent-active); color: var(--accent); }
+.toc-root ul {
+  list-style: none;
+  padding-left: 12px;
+  margin-top: 4px;
+  border-left: 2px solid var(--border);
+}
+.toc-root ul li a {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 2px 0;
+  transition: all 0.15s;
+}
+.toc-root ul li a:hover { background: var(--accent-soft); color: var(--accent); }
+.toc-root ul li a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.content {
+  flex: 1;
+  max-width: 980px;
+  padding: 0 56px 80px;
+  margin: 0 auto;
+}
+.doc-section {
+  padding: 32px 0 48px;
+  border-bottom: 2px dashed var(--border);
+  scroll-margin-top: 20px;
+}
+.doc-section:last-child { border-bottom: none; }
+.doc-section h1 {
+  font-size: 30px;
+  margin-bottom: 24px;
+  color: var(--fg);
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 12px;
+  scroll-margin-top: 20px;
+}
+.doc-section h2 {
+  font-size: 22px;
+  margin-top: 32px;
+  margin-bottom: 16px;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  scroll-margin-top: 20px;
+}
+.doc-section h2::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.doc-section h3 {
+  font-size: 17px;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: var(--accent);
+  scroll-margin-top: 20px;
+}
+.doc-section h4 { font-size: 15px; margin-top: 18px; margin-bottom: 8px; color: var(--fg); font-weight: 700; }
+.doc-section p { margin-bottom: 12px; }
+.doc-section ul, .doc-section ol { margin: 12px 0 12px 28px; }
+.doc-section li { margin-bottom: 4px; }
+.doc-section a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); }
+.doc-section a:hover { background: var(--accent-soft); }
+.doc-section code {
+  background: var(--accent-soft);
+  color: #92400e;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
+  font-size: 0.88em;
+}
+.doc-section pre {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  padding: 14px 18px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 14px 0;
+  font-size: 13px;
+  line-height: 1.55;
+  border-left: 4px solid var(--accent);
+}
+.doc-section pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+.doc-section blockquote {
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 12px 18px;
+  margin: 14px 0;
+  border-radius: 0 8px 8px 0;
+  color: #78350f;
+}
+.doc-section blockquote p:last-child { margin-bottom: 0; }
+.doc-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 14px;
+}
+.doc-section th, .doc-section td {
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.doc-section th {
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+.doc-section tr:nth-child(even) td { background: #fff8ee; }
+.doc-section hr { border: none; border-top: 2px dashed var(--border); margin: 28px 0; }
+.doc-section strong { color: var(--fg); font-weight: 700; }
+.doc-section em { color: #78350f; }
+.hero {
+  background: linear-gradient(135deg, #d97706 0%, #92400e 100%);
+  color: white;
+  padding: 40px 56px;
+  margin: 0 -56px 32px;
+  border-radius: 0 0 16px 16px;
+}
+.hero h1 {
+  font-size: 32px;
+  margin: 0;
+  border: none;
+  color: white;
+  padding: 0;
+}
+.hero .sub { font-size: 15px; opacity: 0.92; margin-top: 8px; }
+.toc-root li.hidden { display: none; }
+@media (max-width: 1024px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: relative; max-height: 360px; }
+  .content { padding: 0 24px 60px; }
+  .hero { margin: 0 -24px 24px; padding: 32px 24px; }
+  .hero h1 { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="sidebar">
+<h2>Mục lục</h2>
+<input type="text" id="toc-search" class="search-box" placeholder="Tìm trong mục lục...">
+<ol class="toc-root">
+<li><a href="#readme-bộ-tài-liệu-train-agent-goclaw" class="toc-file">Bộ tài liệu Train Agent GoClaw</a>
+<ul>
+<li><a href="#readme-tôi-muốn-đọc-file-nào">Tôi muốn... đọc file nào?</a></li>
+<li><a href="#readme-đề-xuất-thứ-tự-đọc">Đề xuất thứ tự đọc</a></li>
+<li><a href="#readme-placeholder-chuẩn-thay-khi-đọccopy">Placeholder chuẩn — thay khi đọc/copy</a></li>
+<li><a href="#readme-prerequisites">Prerequisites</a></li>
+<li><a href="#readme-cảnh-báo-an-toàn-quan-trọng">Cảnh báo an toàn quan trọng</a></li>
+<li><a href="#readme-cấu-trúc-bộ-tài-liệu">Cấu trúc bộ tài liệu</a></li>
+<li><a href="#readme-hỗ-trợ">Hỗ trợ</a></li>
+</ul>
+</li>
+<li><a href="#quickstart-00-quickstart-5-phút-first-win" class="toc-file">00 — Quickstart (5 phút first-win)</a>
+<ul>
+<li><a href="#quickstart-mục-tiêu-file-này">Mục tiêu file này</a></li>
+<li><a href="#quickstart-5-phút-first-win">5 phút first-win</a></li>
+<li><a href="#quickstart-decision-tree-train-tiếp-theo-cách-nào">Decision tree — Train tiếp theo cách nào?</a></li>
+<li><a href="#quickstart-5-nguyên-tắc-vàng-đọc-1-lần-áp-dụng-mãi">5 nguyên tắc vàng (đọc 1 lần, áp dụng mãi)</a></li>
+<li><a href="#quickstart-khi-nào-ngừng-đọc-quickstart-đào-tài-liệu-nào">Khi nào ngừng đọc Quickstart, đào tài liệu nào?</a></li>
+</ul>
+</li>
+<li><a href="#dashboard-01-train-agent-qua-dashboard" class="toc-file">01 — Train Agent qua Dashboard</a>
+<ul>
+<li><a href="#dashboard-tổng-quan-5-cách-đút-kiến-thức-cho-agent">Tổng quan: 5 cách "đút kiến thức" cho agent</a></li>
+<li><a href="#dashboard-a-vault-kho-tài-liệu-chia-sẻ">A. Vault — Kho tài liệu chia sẻ</a></li>
+<li><a href="#dashboard-b-memory-bộ-nhớ-dài-hạn">B. Memory — Bộ nhớ dài hạn</a></li>
+<li><a href="#dashboard-c-knowledge-graph-bản-đồ-quan-hệ">C. Knowledge Graph — Bản đồ quan hệ</a></li>
+<li><a href="#dashboard-d-file-context-tính-cách-agent">D. File context — Tính cách agent</a></li>
+<li><a href="#dashboard-e-skill-cấp-năng-lực-có-sẵn">E. Skill — Cấp năng lực có sẵn</a></li>
+<li><a href="#dashboard-bảng-tóm-tắt-cho-người-vội">Bảng tóm tắt cho người vội</a></li>
+<li><a href="#dashboard-đào-sâu">Đào sâu</a></li>
+</ul>
+</li>
+<li><a href="#claude-02-train-agent-qua-claude-code" class="toc-file">02 — Train Agent qua Claude Code</a>
+<ul>
+<li><a href="#claude-khi-nào-nên-dùng-claude-code-thay-vì-dashboard">Khi nào nên dùng Claude Code thay vì Dashboard</a></li>
+<li><a href="#claude-setup-ban-đầu-1-lần-duy-nhất">Setup ban đầu (1 lần duy nhất)</a></li>
+<li><a href="#claude-prompt-mẫu-copy-paste-ready">Prompt mẫu — copy-paste-ready</a></li>
+<li><a href="#claude-verify-qua-api-các-lệnh-curl-thường-dùng">Verify qua API — các lệnh curl thường dùng</a></li>
+<li><a href="#claude-pitfalls-thường-gặp">Pitfalls thường gặp</a></li>
+<li><a href="#claude-workflow-phối-hợp-claude-dashboard">Workflow phối hợp Claude + Dashboard</a></li>
+<li><a href="#claude-đào-sâu">Đào sâu</a></li>
+</ul>
+</li>
+<li><a href="#skill-03-tạo-skill-mới" class="toc-file">03 — Tạo Skill mới</a>
+<ul>
+<li><a href="#skill-tổng-quan-2-path-tạo-skill">Tổng quan: 2 path tạo skill</a></li>
+<li><a href="#skill-path-a-tự-viết-upload-zip">Path A — Tự viết + Upload ZIP</a></li>
+<li><a href="#skill-path-b-nhờ-agent-tự-tạo-qua-chat">Path B — Nhờ agent tự tạo qua chat</a></li>
+<li><a href="#skill-skillmd-format-chuẩn-chi-tiết">SKILL.md format chuẩn — chi tiết</a></li>
+<li><a href="#skill-per-group-skill-filter-channel">Per-group skill filter (Channel)</a></li>
+<li><a href="#skill-pitfalls-tổng-hợp">Pitfalls tổng hợp</a></li>
+<li><a href="#skill-đào-sâu">Đào sâu</a></li>
+</ul>
+</li>
+<li><a href="#trouble-04-troubleshooting-lỗi-thường-gặp-cách-fix" class="toc-file">04 — Troubleshooting (lỗi thường gặp + cách fix)</a>
+<ul>
+<li><a href="#trouble-mục-lục">Mục lục</a></li>
+<li><a href="#trouble-1-vault-upload-xong-nhưng-search-không-ra">1. Vault: upload xong nhưng search không ra</a></li>
+<li><a href="#trouble-2-memory-search-trả-0-kết-quả">2. Memory: search trả 0 kết quả</a></li>
+<li><a href="#trouble-3-skill-upload-báo-missing-dependencies">3. Skill: upload báo Missing Dependencies</a></li>
+<li><a href="#trouble-4-agent-quên-file-context-vừa-sửa">4. Agent "quên" file context vừa sửa</a></li>
+<li><a href="#trouble-5-bootstrap-trap-agent-kẹt-onboarding-mode">5. Bootstrap trap: agent kẹt onboarding mode</a></li>
+<li><a href="#trouble-6-cron-không-chạy-đúng-giờ">6. Cron không chạy đúng giờ</a></li>
+<li><a href="#trouble-7-per-group-skill-filter-không-apply">7. Per-group skill filter không apply</a></li>
+<li><a href="#trouble-8-api-trả-401-mặc-dù-có-token">8. API trả 401 mặc dù có token</a></li>
+<li><a href="#trouble-9-agent-vượt-budget-bị-chặn-api">9. Agent vượt budget, bị chặn API</a></li>
+<li><a href="#trouble-10-sandbox-timeout-khi-chạy-code-dài">10. Sandbox timeout khi chạy code dài</a></li>
+<li><a href="#trouble-11-skill-zip-báo-phải-chứa-skillmd-ở-thư-mục-gốc">11. Skill ZIP báo "phải chứa SKILL.md ở thư mục gốc"</a></li>
+<li><a href="#trouble-12-gemma-model-400-thinking-level-not-supported">12. Gemma model: 400 "Thinking level not supported"</a></li>
+<li><a href="#trouble-13-channel-status-đỏ-faileddegraded">13. Channel status đỏ: failed/degraded</a></li>
+<li><a href="#trouble-khi-nào-cần-liên-hệ-support">Khi nào cần liên hệ support?</a></li>
+</ul>
+</li>
+<li><a href="#glossary-05-thuật-ngữ-so-sánh-nhanh" class="toc-file">05 — Thuật ngữ &amp; So sánh nhanh</a>
+<ul>
+<li><a href="#glossary-1-năm-cách-đút-kiến-thức-cho-agent-bảng-so-sánh">1. Năm cách "đút kiến thức" cho Agent — bảng so sánh</a></li>
+<li><a href="#glossary-2-memory-vs-vault-vs-file-context-phân-biệt-3-thứ-hay-nhầm">2. Memory vs Vault vs File context — phân biệt 3 thứ hay nhầm</a></li>
+<li><a href="#glossary-3-thuật-ngữ-agent">3. Thuật ngữ Agent</a></li>
+<li><a href="#glossary-4-thuật-ngữ-skill">4. Thuật ngữ Skill</a></li>
+<li><a href="#glossary-5-thuật-ngữ-channel">5. Thuật ngữ Channel</a></li>
+<li><a href="#glossary-6-thuật-ngữ-session-sandbox">6. Thuật ngữ Session &amp; Sandbox</a></li>
+<li><a href="#glossary-7-thuật-ngữ-liên-quan-api">7. Thuật ngữ liên quan API</a></li>
+<li><a href="#glossary-đào-sâu">Đào sâu</a></li>
+</ul>
+</li>
+<li><a href="#read-claude-06-đọc-tài-liệu-này-bằng-claude" class="toc-file">06 — Đọc tài liệu này bằng Claude</a>
+<ul>
+<li><a href="#read-claude-cách-1-claude-code-recommended-cho-người-đã-quen-cli">Cách 1 — Claude Code (recommended cho người đã quen CLI)</a></li>
+<li><a href="#read-claude-cách-2-claude-desktop-với-filesystem-mcp">Cách 2 — Claude Desktop với Filesystem MCP</a></li>
+<li><a href="#read-claude-cách-3-claudeai-web-không-cần-cài-gì">Cách 3 — Claude.ai (web, không cần cài gì)</a></li>
+<li><a href="#read-claude-cách-4-đút-thẳng-vào-vault-của-agent-meta">Cách 4 — Đút thẳng vào Vault của agent (meta!)</a></li>
+<li><a href="#read-claude-so-sánh-4-cách">So sánh 4 cách</a></li>
+<li><a href="#read-claude-prompt-mẫu-hiệu-quả">Prompt mẫu hiệu quả</a></li>
+<li><a href="#read-claude-đào-sâu">Đào sâu</a></li>
+</ul>
+</li>
+</ol></nav>
+<main class="content">
+<div class="hero">
+<h1>GoClaw — Hướng dẫn Train Agent</h1>
+<div class="sub">Bộ tài liệu hướng dẫn train Agent · 8 chương · Đọc 30-45 phút</div>
+</div>
+<section id="readme" class="doc-section"><h1 id="readme-bộ-tài-liệu-train-agent-goclaw">Bộ tài liệu Train Agent GoClaw</h1>
+<p>Hướng dẫn tự <strong>train</strong> (đút kiến thức + cấp năng lực) cho agent GoClaw của bạn — qua <strong>Dashboard</strong> UI hoặc qua <strong>Claude Code</strong> CLI.</p>
+<blockquote>
+<p>⚠️ Tài liệu generic. Mọi nơi viết <code>&lt;agent-name&gt;</code>, <code>&lt;tenant-slug&gt;</code>, <code>&lt;gateway-token&gt;</code>, ... bạn thay bằng giá trị thật của mình.</p>
+</blockquote>
+<hr />
+<h2 id="readme-tôi-muốn-đọc-file-nào">Tôi muốn... đọc file nào?</h2>
+<table>
+<thead>
+<tr>
+<th>Tình huống</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Lần đầu mở dashboard, muốn quick win 5 phút</strong></td>
+<td><a href="#quickstart">00 — Quickstart</a></td>
+</tr>
+<tr>
+<td><strong>Train hằng ngày qua dashboard</strong> (đút PDF, ghi note, đổi tính cách agent)</td>
+<td><a href="#dashboard">01 — Train Dashboard</a></td>
+</tr>
+<tr>
+<td><strong>Train qua Claude Code</strong> (bulk import, tự động hóa, gọi API)</td>
+<td><a href="#claude">02 — Train via Claude</a></td>
+</tr>
+<tr>
+<td><strong>Tạo skill mới</strong> cho agent (cấp năng lực mới — làm Excel, parse PDF, gọi API)</td>
+<td><a href="#skill">03 — Tạo Skill</a></td>
+</tr>
+<tr>
+<td><strong>Đang gặp lỗi</strong> (search không ra, agent quên, upload fail, ...)</td>
+<td><a href="#trouble">04 — Troubleshooting</a></td>
+</tr>
+<tr>
+<td><strong>Không hiểu thuật ngữ</strong> (Memory vs Vault vs KG vs File context vs Skill?)</td>
+<td><a href="#glossary">05 — Glossary</a></td>
+</tr>
+<tr>
+<td><strong>Muốn dùng Claude (Code/Desktop/web) đọc bộ tài liệu này</strong></td>
+<td><a href="#read-claude">06 — Đọc bằng Claude</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="readme-đề-xuất-thứ-tự-đọc">Đề xuất thứ tự đọc</h2>
+<p><strong>Lần đầu tiếp xúc Goclaw</strong> (ước chừng 30-45 phút):<br />
+1. <a href="#quickstart">00 — Quickstart</a> (5 phút) — first-win + decision tree<br />
+2. <a href="#glossary">05 — Glossary</a> (5 phút) — phân biệt 5 cách "đút kiến thức"<br />
+3. <a href="#dashboard">01 — Train Dashboard</a> (15-20 phút) — xương sống thao tác qua UI<br />
+4. <a href="#skill">03 — Tạo Skill</a> (10 phút) — khi cần năng lực mới</p>
+<p><strong>Khi cần dùng Claude Code:</strong><br />
+- <a href="#claude">02 — Train via Claude</a> (15 phút setup + prompt mẫu)</p>
+<p><strong>Khi gặp lỗi:</strong><br />
+- Scan <a href="#trouble">04 — Troubleshooting</a> tìm symptom giống mình</p>
+<hr />
+<h2 id="readme-placeholder-chuẩn-thay-khi-đọccopy">Placeholder chuẩn — thay khi đọc/copy</h2>
+<p>Mọi file dùng các placeholder sau. Ghi giá trị thật của bạn vào đây 1 lần để tham chiếu:</p>
+<pre><code>&lt;agent-name&gt;     = ___________________   (tên hiển thị, vd &quot;Alpha&quot;)
+&lt;agent-key&gt;      = ___________________   (slug agent, vd &quot;alpha&quot;)
+&lt;agent-id&gt;       = ___________________   (UUID, query DB)
+&lt;tenant-slug&gt;    = ___________________   (vd &quot;example.com&quot;)
+&lt;your-vps&gt;       = ___________________   (host hoặc IP)
+&lt;ssh-alias&gt;      = ___________________   (vd &quot;myvps&quot;)
+&lt;gateway-token&gt;  = ___________________   (từ .env, biến GOCLAW_GATEWAY_TOKEN)
+&lt;user-id&gt;        = ___________________   (user ID dùng API, lấy từ contact)
+&lt;channel-slug&gt;   = ___________________   (slug channel, vd &quot;alpha-bot&quot;)
+</code></pre>
+<p><strong>Master tenant ID</strong> (cố định, không phải placeholder):</p>
+<pre><code>0193a5b0-7000-7000-8000-000000000001
+</code></pre>
+<p>Master tenant không cần header <code>X-GoClaw-Tenant-Id</code>.</p>
+<hr />
+<h2 id="readme-prerequisites">Prerequisites</h2>
+<p>Trước khi đọc tài liệu này, đảm bảo:</p>
+<h3 id="readme-account-access">Account &amp; Access</h3>
+<ul>
+<li>[ ] Có <strong>account dashboard GoClaw</strong> với role admin/operator (đăng nhập được vào <code>https://&lt;your-vps&gt;</code>)</li>
+<li>[ ] <strong>Agent đã được tạo</strong> (status <code>active</code> trong menu Agents) — chưa có thì xem mục "Tạo agent" của file <code>01</code></li>
+<li>[ ] <strong>Agent đã có Provider + Model</strong> cấu hình (vd Gemini/Claude/OpenAI) — xem menu Agents → Mô hình &amp; Ngân sách</li>
+<li>[ ] <strong>Budget Monthly đã đặt</strong> cho agent (đừng để vô hạn)</li>
+</ul>
+<h3 id="readme-cho-thao-tác-qua-dashboard-file-00-01-03">Cho thao tác qua Dashboard (file 00, 01, 03)</h3>
+<ul>
+<li>[ ] Browser hiện đại (Chrome/Edge/Firefox bản mới)</li>
+<li>[ ] (Tùy chọn) Channel đã pair (Telegram/Slack/Zalo/...) để test chat — không bắt buộc, có thể test qua Web Chat</li>
+</ul>
+<h3 id="readme-cho-thao-tác-qua-claude-code-file-02">Cho thao tác qua Claude Code (file 02)</h3>
+<ul>
+<li>[ ] <strong>Claude Code</strong> đã cài trên máy local (https://claude.com/claude-code)</li>
+<li>[ ] <strong>SSH key</strong> vào VPS chứa container GoClaw (test: <code>ssh &lt;ssh-alias&gt;</code> vào được không hỏi password)</li>
+<li>[ ] <strong><code>.env</code> trên VPS</strong> có biến <code>GOCLAW_GATEWAY_TOKEN</code> (test: <code>ssh &lt;ssh-alias&gt; "grep GOCLAW_GATEWAY_TOKEN /opt/goclaw/&lt;tenant-slug&gt;/.env"</code>)</li>
+<li>[ ] <strong><code>CLAUDE.md</code></strong> đã setup theo template ở <a href="#claude-bước-2-tạo-claudemd-chứa-context">02 — Train via Claude §Bước 2</a></li>
+</ul>
+<h3 id="readme-cho-tạo-skill-file-03">Cho tạo Skill (file 03)</h3>
+<ul>
+<li>[ ] Hiểu cơ bản <strong>Markdown</strong> + <strong>YAML</strong> (cho Path A — tự viết)</li>
+<li>[ ] Skill <code>skill-creator</code> đã được bật + gắn vào agent (cho Path B — chat agent)</li>
+<li>[ ] Built-in Tools đã bật: <code>skill_search</code>, <code>use_skill</code>, <code>publish_skill</code>, <code>write_file</code>, <code>exec</code></li>
+</ul>
+<hr />
+<h2 id="readme-cảnh-báo-an-toàn-quan-trọng">Cảnh báo an toàn quan trọng</h2>
+<p>⚠️ <strong>Đọc trước khi train production:</strong></p>
+<ol>
+<li><strong>Đặt Budget Monthly</strong> trước khi train nhiều — không thì vượt budget bất ngờ, agent bị chặn API</li>
+<li><strong>KHÔNG để PII/password ở Memory scope Toàn cục</strong> — chỉ Cá nhân</li>
+<li><strong>KHÔNG để Visibility skill = Công khai</strong> trừ khi đã kiểm định kỹ — default Nội bộ an toàn</li>
+<li><strong>KHÔNG commit <code>&lt;gateway-token&gt;</code> thật</strong> vào git public</li>
+<li><strong>Tạo session mới sau khi sửa file context</strong> (SOUL.md/IDENTITY.md/USER.md) — nếu không thay đổi không có hiệu lực</li>
+<li><strong>Cron job VN</strong> luôn set múi giờ <code>Asia/Ho_Chi_Minh</code> — default UTC sẽ chạy lệch 7 tiếng</li>
+<li><strong>Per-group skill filter</strong> — nếu agent chạy trong group production, set Bộ lọc skill ở tab Nhóm để cấm skill nguy hiểm (vd <code>skill-creator</code> chỉ admin DM riêng)</li>
+</ol>
+<hr />
+<h2 id="readme-cấu-trúc-bộ-tài-liệu">Cấu trúc bộ tài liệu</h2>
+<pre><code>customer-handover/
+├── README.md                    ← bạn đang đọc
+├── 00-quickstart.md             ← 5 phút first-win + decision tree
+├── 01-train-agent-dashboard.md  ← 5 cách train qua UI (Vault/Memory/KG/File context/Skill)
+├── 02-train-agent-via-claude.md ← Workflow Claude Code + 5 prompt mẫu copy-paste
+├── 03-create-skill.md           ← Tạo skill mới (Path A: ZIP / Path B: chat agent)
+├── 04-troubleshooting.md        ← 13 case lỗi: Symptom → Diagnose → Fix → Prevent
+├── 05-glossary.md               ← Lookup thuật ngữ + bảng so sánh 5 cách &quot;đút kiến thức&quot;
+└── 06-read-with-claude.md       ← Cách dùng Claude Code/Desktop/web đọc bộ này
+</code></pre>
+<hr />
+<h2 id="readme-hỗ-trợ">Hỗ trợ</h2>
+<p>Nếu có câu hỏi không tìm thấy answer trong bộ tài liệu, xem mục "<strong>Khi nào cần liên hệ support?</strong>" cuối file <a href="#trouble-khi-nào-cần-liên-hệ-support">04 — Troubleshooting</a> để biết cách gom thông tin gửi support nhanh nhất.</p></section>
+<section id="quickstart" class="doc-section"><h1 id="quickstart-00-quickstart-5-phút-first-win">00 — Quickstart (5 phút first-win)</h1>
+<blockquote>
+<p><strong>Cảnh báo trước khi bắt đầu:</strong><br />
+⚠️ Trước khi train nhiều, vào <strong>Agents → <code>&lt;agent-name&gt;</code> → Mô hình &amp; Ngân sách</strong> đặt <strong>Budget Monthly</strong> (USD/tháng). Không đặt = vượt budget không kiểm soát, agent có thể bị chặn API.</p>
+<p>Khuyến nghị: Sonnet/Gemini Pro: 20-50 USD/tháng cho agent thường. Opus/reasoning: 100-300 USD.</p>
+</blockquote>
+<hr />
+<h2 id="quickstart-mục-tiêu-file-này">Mục tiêu file này</h2>
+<p>Sau <strong>5 phút</strong>, bạn có thể:<br />
+1. Login dashboard và mở agent của mình<br />
+2. Đẩy 1 file PDF/Word/Markdown lên Vault<br />
+3. Chat với agent để verify nó đọc được file đó<br />
+4. <strong>Quyết định</strong> train tiếp theo cách nào (Vault / Memory / KG / File context / Skill)</p>
+<hr />
+<h2 id="quickstart-5-phút-first-win">5 phút first-win</h2>
+<h3 id="quickstart-bước-1-login-dashboard-30-giây">Bước 1. Login dashboard (30 giây)</h3>
+<p>Mở browser → <code>https://&lt;your-vps&gt;</code> → đăng nhập.</p>
+<p>Sau login, sidebar trái có 11 menu nhóm theo 4 cụm:<br />
+- <strong>CORE</strong> — Overview, Chat, Agents, Agent Link &amp; Team<br />
+- <strong>CONVERSATIONS</strong> — Sessions, Pending Messages, Contacts<br />
+- <strong>CONNECTIVITY</strong> — Channels, Nodes<br />
+- <strong>CAPABILITIES</strong> — Skills, Built-in Tools, MCP Servers, TTS, Cron, Hooks<br />
+- <strong>DATA</strong> — Memory, Vault, Knowledge Graph</p>
+<h3 id="quickstart-bước-2-mở-agent-của-bạn-30-giây">Bước 2. Mở agent của bạn (30 giây)</h3>
+<p>Sidebar → <strong>Agents</strong> → click <code>&lt;agent-name&gt;</code> trong list.</p>
+<p>Tab default mở là <strong>Agent</strong>. Cuộn xem:<br />
+- <strong>Persona</strong> — tóm tắt chuyên môn (text này LLM thực sự đọc)<br />
+- <strong>Mô hình &amp; Ngân sách</strong> — provider/model/context window/<strong>Budget Monthly</strong><br />
+- <strong>Skills</strong> + <strong>Pinned Skills</strong></p>
+<p>⚠️ <strong>Đặt Budget Monthly NGAY nếu chưa có</strong> — không thì làm gì cũng risk.</p>
+<h3 id="quickstart-bước-3-upload-1-file-vào-vault-2-phút">Bước 3. Upload 1 file vào Vault (2 phút)</h3>
+<p>Sidebar → <strong>Vault</strong>.</p>
+<ol>
+<li>Header → bấm <strong>Tải lên Kho Tri Thức</strong></li>
+<li><strong>Đích đến</strong>: chọn radio <strong><code>Agent</code></strong> → combobox chọn <code>&lt;agent-name&gt;</code></li>
+<li><strong>Loại</strong>: chọn <code>Tài liệu</code> (default cho mọi doc)</li>
+<li>Drop 1 file <code>.pdf</code> / <code>.md</code> / <code>.docx</code> / <code>.txt</code> vào dropzone</li>
+<li>Bấm <strong>Tải lên</strong></li>
+</ol>
+<p>Đợi 30 giây – 1 phút để hệ thống lập chỉ mục.</p>
+<h3 id="quickstart-bước-4-verify-1-phút">Bước 4. Verify (1 phút)</h3>
+<p>Vào <strong>Vault</strong> → bấm <strong>🔍 Tìm kiếm</strong> → gõ câu hỏi liên quan <strong>nội dung file vừa upload</strong>.</p>
+<p>Vd file là báo cáo tài chính Q1 → search "doanh thu Q1 bao nhiêu". Phải có kết quả với:<br />
+- <strong>Score &gt; 0.5</strong> (càng cao càng đúng)<br />
+- <strong>Đường dẫn</strong> trỏ tới file vừa upload<br />
+- <strong>Chunk text</strong> chứa thông tin liên quan</p>
+<h3 id="quickstart-bước-5-chat-với-agent-1-phút">Bước 5. Chat với agent (1 phút)</h3>
+<p>Sidebar → <strong>Chat</strong> → mở cuộc chat với <code>&lt;agent-name&gt;</code>.</p>
+<p>Hỏi câu liên quan file vừa upload. Agent phải:<br />
+1. <strong>Tự gọi</strong> <code>vault_search</code> (sẽ thấy tool call trong UI)<br />
+2. Trả lời dựa trên content file vừa đút</p>
+<p>Nếu agent <strong>không</strong> dùng <code>vault_search</code> → kiểm tra:<br />
+- Built-in Tool <strong>Bộ nhớ</strong> có bật <code>vault_search</code> chưa? (Built-in Tools menu)<br />
+- Vault doc có <strong>scope đúng</strong> không? Cá nhân chỉ user đó thấy, Chia sẻ thì cả workspace thấy</p>
+<hr />
+<h2 id="quickstart-decision-tree-train-tiếp-theo-cách-nào">Decision tree — Train tiếp theo cách nào?</h2>
+<pre><code>                    Tôi muốn agent...
+                          │
+        ┌─────────────────┼─────────────────┐
+        ▼                 ▼                 ▼
+   ĐỌC ĐƯỢC          NHỚ ĐƯỢC          LÀM ĐƯỢC
+   (tài liệu)         (note/fact)       (thao tác)
+        │                 │                 │
+        ▼                 ▼                 ▼
+  ─────────────    ──────────────    ─────────────
+  File &gt;1 trang?   Cần share team?   Có file SKILL
+       │                 │            sẵn / biết viết?
+   ┌───┴───┐         ┌───┴───┐            │
+   ▼       ▼         ▼       ▼        ┌───┴────┐
+  CÓ      KHÔNG     CÓ      KHÔNG     ▼        ▼
+   │       │         │       │       CÓ      KHÔNG
+   ▼       ▼         ▼       ▼        │        │
+ VAULT   MEMORY    VAULT   MEMORY     ▼        ▼
+                                    PATH A   PATH B
+                                  (upload   (chat agent
+                                   ZIP)     skill-creator)
+
+         Tôi muốn agent có...
+                    │
+        ┌───────────┴───────────┐
+        ▼                       ▼
+   QUAN HỆ                  TÍNH CÁCH
+   (entity-relation)        (cách trả lời)
+        │                       │
+        ▼                       ▼
+  KNOWLEDGE GRAPH         FILE CONTEXT
+  (auto từ Memory)        (SOUL.md /
+                           IDENTITY.md)
+</code></pre>
+<h3 id="quickstart-bảng-quyết-định-nhanh">Bảng quyết định nhanh</h3>
+<table>
+<thead>
+<tr>
+<th>Tôi muốn...</th>
+<th>Cách</th>
+<th>Section</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent đọc được nhiều tài liệu (PDF/Word)</td>
+<td><strong>Vault</strong></td>
+<td><a href="#dashboard-a-vault-kho-tài-liệu-chia-sẻ">01 §A</a></td>
+</tr>
+<tr>
+<td>Agent nhớ ghi chú ngắn về user/khách</td>
+<td><strong>Memory</strong></td>
+<td><a href="#dashboard-b-memory-bộ-nhớ-dài-hạn">01 §B</a></td>
+</tr>
+<tr>
+<td>Hỏi câu quan hệ phức tạp ("ai mua X làm ở Y?")</td>
+<td><strong>Knowledge Graph</strong></td>
+<td><a href="#dashboard-c-knowledge-graph-bản-đồ-quan-hệ">01 §C</a></td>
+</tr>
+<tr>
+<td>Đổi xưng hô / phong cách / vai trò agent</td>
+<td><strong>File context (SOUL.md)</strong></td>
+<td><a href="#dashboard-d-file-context-tính-cách-agent">01 §D</a></td>
+</tr>
+<tr>
+<td>Cấp năng lực dùng skill có sẵn (pdf/docx/xlsx)</td>
+<td><strong>Skill — bật + gắn</strong></td>
+<td><a href="#dashboard-e-skill-cấp-năng-lực-có-sẵn">01 §E</a></td>
+</tr>
+<tr>
+<td>Tạo skill mới</td>
+<td><strong>Skill — Path A hoặc B</strong></td>
+<td><a href="#skill">03 — Tạo Skill</a></td>
+</tr>
+<tr>
+<td>Bulk import 50+ file từ máy local</td>
+<td><strong>Claude Code workflow</strong></td>
+<td><a href="#claude">02 — Train via Claude</a></td>
+</tr>
+<tr>
+<td>Tự động hóa update Vault định kỳ</td>
+<td><strong>Cron + Claude Code</strong></td>
+<td><a href="#claude-prompt-5-lập-lịch-cron-đọc-file-định-kỳ">02 — Train via Claude §Prompt 5</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="quickstart-5-nguyên-tắc-vàng-đọc-1-lần-áp-dụng-mãi">5 nguyên tắc vàng (đọc 1 lần, áp dụng mãi)</h2>
+<ol>
+<li>
+<p><strong>Đặt Budget Monthly trước khi train</strong>. Không thì train bao nhiêu cũng vô ích — bị chặn API.</p>
+</li>
+<li>
+<p><strong>Vault cho file lớn / share team. Memory cho note ngắn / per-agent.</strong> Đừng nhầm chỗ — sai = search không ra hoặc nhiễu.</p>
+</li>
+<li>
+<p><strong>Sửa file context (SOUL.md/IDENTITY.md/USER.md) → tạo session mới.</strong> Session đang chạy đã cache system prompt — không thấy thay đổi.</p>
+</li>
+<li>
+<p><strong>Skill cần làm cả 3 tầng</strong>: Bật toàn cục → Cài deps → Gắn vào agent. Quên 1 tầng = không xài được.</p>
+</li>
+<li>
+<p><strong>Test sau mỗi train</strong> — search/chat thử ngay. Sửa sai sớm = đỡ phải đào lại.</p>
+</li>
+</ol>
+<hr />
+<h2 id="quickstart-khi-nào-ngừng-đọc-quickstart-đào-tài-liệu-nào">Khi nào ngừng đọc Quickstart, đào tài liệu nào?</h2>
+<table>
+<thead>
+<tr>
+<th>Tình huống</th>
+<th>Đọc tiếp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tôi đã làm xong 5 phút, muốn train nhiều cách hơn qua dashboard</td>
+<td><a href="#dashboard">01 — Train Dashboard</a></td>
+</tr>
+<tr>
+<td>Tôi muốn dùng Claude Code để bulk import / tự động hóa</td>
+<td><a href="#claude">02 — Train via Claude</a></td>
+</tr>
+<tr>
+<td>Tôi muốn tạo skill cho agent (chưa có sẵn)</td>
+<td><a href="#skill">03 — Tạo Skill</a></td>
+</tr>
+<tr>
+<td>Tôi vừa bị lỗi gì đó (search không ra, agent quên, upload fail)</td>
+<td><a href="#trouble">04 — Troubleshooting</a></td>
+</tr>
+<tr>
+<td>Tôi không hiểu thuật ngữ (Memory vs Vault vs KG vs ...)</td>
+<td><a href="#glossary">05 — Glossary</a></td>
+</tr>
+</tbody>
+</table></section>
+<section id="dashboard" class="doc-section"><h1 id="dashboard-01-train-agent-qua-dashboard">01 — Train Agent qua Dashboard</h1>
+<blockquote>
+<p><strong>Cảnh báo trước khi bắt đầu:</strong><br />
+⚠️ Luôn đặt <strong>Budget Monthly</strong> cho agent (menu Agent → Mô hình &amp; Ngân sách) trước khi cấp nhiều skill/memory. Nếu không, vượt budget → agent bị chặn API tới đầu tháng sau.</p>
+</blockquote>
+<hr />
+<h2 id="dashboard-tổng-quan-5-cách-đút-kiến-thức-cho-agent">Tổng quan: 5 cách "đút kiến thức" cho agent</h2>
+<table>
+<thead>
+<tr>
+<th>Mục</th>
+<th>Phù hợp khi</th>
+<th>Section</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A. Vault</strong> — Kho tài liệu chia sẻ</td>
+<td>Có file PDF/Word/CSV/MD muốn agent đọc được</td>
+<td><a href="#dashboard-a-vault-kho-tài-liệu-chia-sẻ">§A</a></td>
+</tr>
+<tr>
+<td><strong>B. Memory</strong> — Bộ nhớ riêng agent</td>
+<td>Note ngắn, fact riêng cho agent nhớ qua nhiều cuộc chat</td>
+<td><a href="#dashboard-b-memory-bộ-nhớ-dài-hạn">§B</a></td>
+</tr>
+<tr>
+<td><strong>C. Knowledge Graph</strong> — Bản đồ quan hệ</td>
+<td>Câu hỏi quan hệ ("khách nào mua X và làm ở Y?")</td>
+<td><a href="#dashboard-c-knowledge-graph-bản-đồ-quan-hệ">§C</a></td>
+</tr>
+<tr>
+<td><strong>D. File context</strong> — Tính cách agent</td>
+<td>Đổi cách xưng hô, vai trò, phong cách trả lời</td>
+<td><a href="#dashboard-d-file-context-tính-cách-agent">§D</a></td>
+</tr>
+<tr>
+<td><strong>E. Skill (cài sẵn)</strong> — Cấp năng lực có sẵn</td>
+<td>Bật cho agent dùng skill <code>pdf</code>, <code>docx</code>, <code>xlsx</code>, <code>pptx</code> (có sẵn)</td>
+<td><a href="#dashboard-e-skill-cấp-năng-lực-có-sẵn">§E</a></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Tạo skill MỚI</strong> (tự viết hoặc nhờ agent tự tạo) → xem <a href="#skill">03 — Tạo Skill</a>.</p>
+<p><strong>Phân biệt 5 thứ trên</strong> nếu chưa rõ → xem <a href="#glossary">05 — Glossary</a>.</p>
+</blockquote>
+<hr />
+<h2 id="dashboard-a-vault-kho-tài-liệu-chia-sẻ">A. Vault — Kho tài liệu chia sẻ</h2>
+<h3 id="dashboard-khi-nào-dùng">Khi nào dùng</h3>
+<ul>
+<li>Có <strong>file PDF, Word, Excel, Markdown, CSV, JSON</strong> muốn agent đọc/tham chiếu</li>
+<li>Tài liệu <strong>dùng chung</strong> cho team hoặc cho 1 nhóm user</li>
+<li>Cần <strong>wikilinks</strong> giữa các tài liệu (link <code>[[doc-khac]]</code>)</li>
+</ul>
+<h3 id="dashboard-khi-nào-không-dùng">Khi nào KHÔNG dùng</h3>
+<ul>
+<li>Note ngắn 1-2 câu → dùng <strong>Memory</strong></li>
+<li>File chứa thông tin nhạy cảm chỉ cho 1 user → dùng scope <strong>Cá nhân</strong> (KHÔNG để scope Chia sẻ)</li>
+</ul>
+<h3 id="dashboard-tldr-3-bước">TL;DR 3 bước</h3>
+<ol>
+<li>Vào menu <strong>Vault</strong> → bấm <strong>Tải lên Kho Tri Thức</strong></li>
+<li>Chọn <strong>Phạm vi</strong> (Cá nhân / Nhóm / Chia sẻ) + <strong>Loại</strong> (Tài liệu / Ngữ cảnh / Ghi chú / ...)</li>
+<li>Drop file → bấm <strong>Tải lên</strong> → đợi <strong>Lập chỉ mục</strong></li>
+</ol>
+<h3 id="dashboard-step-by-step">Step-by-step</h3>
+<p><strong>Bước 1.</strong> Menu <strong>Vault</strong> → header có <strong>5 nút action</strong>:<br />
+- <code>+ Tạo mới</code> — tạo doc mới (gõ markdown trực tiếp)<br />
+- <code>Tải lên Kho Tri Thức</code> — bulk upload file<br />
+- <code>🔍 Tìm kiếm</code> — hybrid search (semantic + keyword)<br />
+- <code>Quét lại workspace</code> — sync folder workspace agent → vault<br />
+- <code>🔄 Refresh</code></p>
+<p><strong>Bước 2.</strong> Bấm <strong>Tải lên Kho Tri Thức</strong>. Form gồm:</p>
+<table>
+<thead>
+<tr>
+<th>Trường</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Đích đến</strong></td>
+<td>Radio 3 lựa chọn: <code>Chia sẻ</code> (toàn workspace) / <code>Agent</code> (chọn 1 agent) / <code>Nhóm</code> (chọn 1 team)</td>
+</tr>
+<tr>
+<td><strong>Loại</strong></td>
+<td>7 loại: <code>Ngữ cảnh</code> (background, brand voice) / <code>Bộ nhớ</code> / <code>Ghi chú</code> / <code>Kỹ năng</code> / <code>Giai thoại</code> / <code>Media</code> / <code>Tài liệu</code> (default)</td>
+</tr>
+<tr>
+<td><strong>Dropzone</strong></td>
+<td>Kéo thả nhiều file. Chấp nhận: <code>.md</code>, <code>.txt</code>, <code>.json</code>, <code>.yaml</code>, <code>.csv</code>, <code>.pdf</code>, <code>.docx</code>, ...</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bước 3.</strong> Sau khi chọn file, hệ thống hiện "File (N)" + danh sách → bấm <strong>Tải lên</strong>.</p>
+<p><strong>Bước 4.</strong> Hệ thống tự <strong>lập chỉ mục</strong> (chia chunk + sinh embedding). Quá trình này có thể mất 30 giây – vài phút tùy số file.</p>
+<h3 id="dashboard-verify">Verify</h3>
+<p>Vào menu <strong>Vault</strong> → bấm <strong>🔍 Tìm kiếm</strong> → gõ câu hỏi liên quan tài liệu vừa upload (vd "chính sách hoàn trả?"). Phải có kết quả trả về với score &gt; 0.5 và đường dẫn doc đúng.</p>
+<p>Nếu trả 0 kết quả → kiểm tra trạng thái lập chỉ mục:<br />
+- Mở doc đó → tab <strong>Đoạn trích (Chunks)</strong> → nếu thấy 🟡 "Chưa nhúng" → đợi thêm hoặc bấm <strong>Re-index</strong></p>
+<h3 id="dashboard-pitfalls">Pitfalls</h3>
+<ul>
+<li><strong>Đừng để file &gt;100MB / nhiều file 1 lúc</strong> — quét bị cắt ("đạt giới hạn"), một số file không được index</li>
+<li><strong>Đặt path có tổ chức</strong>: <code>policies/refund.md</code>, <code>products/specs/laptop.md</code> — khó tìm hơn nhiều khi tất cả nằm root</li>
+<li><strong>Loại đúng</strong>: <code>Note</code> ≠ <code>Skill</code> ≠ <code>Context</code> — đặt sai → bộ lọc không tìm ra</li>
+<li><strong>Doc 1 chủ đề</strong> thay vì doc 10K từ ôm đồm → embedding chính xác hơn</li>
+<li><strong>Xóa doc cũ/sai định kỳ</strong> — agent "nhớ" thông tin lỗi thời (giá cũ, policy đã đổi) sẽ trả lời sai</li>
+</ul>
+<hr />
+<h2 id="dashboard-b-memory-bộ-nhớ-dài-hạn">B. Memory — Bộ nhớ dài hạn</h2>
+<h3 id="dashboard-khi-nào-dùng_1">Khi nào dùng</h3>
+<ul>
+<li>Note <strong>ngắn</strong> (1-2 đoạn) muốn agent nhớ qua nhiều cuộc chat</li>
+<li>Fact riêng của 1 user (sở thích, lịch sử, ngữ cảnh cá nhân)</li>
+<li>Thông tin <strong>chỉ thuộc 1 agent</strong>, không cần share team</li>
+</ul>
+<h3 id="dashboard-khi-nào-không-dùng_1">Khi nào KHÔNG dùng</h3>
+<ul>
+<li>Tài liệu nhiều trang → dùng <strong>Vault</strong></li>
+<li>Thông tin cần wikilinks/cross-reference → dùng <strong>Vault</strong></li>
+</ul>
+<h3 id="dashboard-tldr-3-bước_1">TL;DR 3 bước</h3>
+<ol>
+<li>Vào menu <strong>Memory</strong> → bấm <strong>+ Tạo</strong></li>
+<li>Điền <code>Đường dẫn</code> (vd <code>notes/khach-hang-abc.md</code>) + nội dung markdown + chọn <code>Agent</code> + <code>Phạm vi</code></li>
+<li><strong>BẬT</strong> "Tự động lập chỉ mục sau khi tạo" → Lưu</li>
+</ol>
+<h3 id="dashboard-step-by-step_1">Step-by-step</h3>
+<p><strong>Bước 1.</strong> Menu <strong>Memory</strong> → tab <strong>Tài liệu</strong> (default).</p>
+<p><strong>Bước 2.</strong> Header có <strong>4 nút</strong>:<br />
+- <code>🔍 Tìm kiếm</code> — semantic search dialog<br />
+- <code>+ Tạo</code> — tạo doc mới<br />
+- <code>Lập chỉ mục tất cả</code> — re-index toàn bộ memory<br />
+- <code>🔄 Refresh</code></p>
+<p><strong>Bước 3.</strong> Bấm <strong>+ Tạo</strong>. Form gồm:</p>
+<table>
+<thead>
+<tr>
+<th>Trường</th>
+<th>Required</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Đường dẫn</td>
+<td>✓</td>
+<td>File path style. Vd <code>notes/project-overview.md</code>, <code>customers/abc-corp.md</code></td>
+</tr>
+<tr>
+<td>Nội dung</td>
+<td>✓</td>
+<td>Markdown</td>
+</tr>
+<tr>
+<td>Agent</td>
+<td>✓</td>
+<td>Chọn <code>&lt;agent-name&gt;</code></td>
+</tr>
+<tr>
+<td>Phạm vi</td>
+<td>—</td>
+<td><code>Toàn cục</code> (cho mọi user của agent) / <code>Cá nhân</code> (chọn user/group cụ thể)</td>
+</tr>
+<tr>
+<td><strong>Tự động lập chỉ mục</strong></td>
+<td>—</td>
+<td><strong>BẬT</strong> — nếu không thì doc chưa search được</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bước 4.</strong> Lưu → đợi 10-30 giây để embedding sinh xong.</p>
+<h3 id="dashboard-verify_1">Verify</h3>
+<p>Bấm <strong>🔍 Tìm kiếm</strong> → gõ câu hỏi tự nhiên liên quan nội dung vừa ghi. Mỗi kết quả hiện chunk text + score "tương đồng" (0-1) + đường dẫn document.</p>
+<p>Score &gt;0.5 = tốt. &lt;0.35 = có thể không match.</p>
+<h3 id="dashboard-pitfalls_1">Pitfalls</h3>
+<ul>
+<li>⚠️ <strong>KHÔNG để PII/password ở scope Toàn cục</strong> — số CMND, mật khẩu, token... chỉ để scope <strong>Cá nhân</strong></li>
+<li><strong>Path có tổ chức</strong>: <code>notes/strategy.md</code>, <code>customers/abc-corp.md</code>, <code>meetings/2026-Q2.md</code> — dễ filter, dễ xóa hàng loạt</li>
+<li><strong>Doc dài → chia nhỏ</strong>: 1 doc nên dưới ~3000 ký tự cho 1 chủ đề. Doc 10K từ về mọi thứ → embedding kém</li>
+<li><strong>Re-index sau khi đổi embedding model</strong> — bấm <strong>Lập chỉ mục tất cả</strong> ở header</li>
+<li>Agent <strong>"quên"</strong> (search không thấy) → hạ <strong>Min Score</strong> từ 0.35 → 0.25 trong Memory settings (xem <a href="#trouble">04 — Troubleshooting</a>)</li>
+</ul>
+<hr />
+<h2 id="dashboard-c-knowledge-graph-bản-đồ-quan-hệ">C. Knowledge Graph — Bản đồ quan hệ</h2>
+<h3 id="dashboard-khi-nào-dùng_2">Khi nào dùng</h3>
+<ul>
+<li>Cần trả lời câu hỏi <strong>quan hệ</strong>: "Khách nào mua laptop và làm ở TechCorp?", "Dự án X có ai phụ trách?"</li>
+<li>Có nhiều <strong>thực thể</strong> (người, công ty, sản phẩm, địa điểm, sự kiện) liên quan đến nhau</li>
+<li>Đã có nhiều memory document và muốn trích xuất quan hệ tự động</li>
+</ul>
+<h3 id="dashboard-khi-nào-không-dùng_2">Khi nào KHÔNG dùng</h3>
+<ul>
+<li>Chỉ cần text search đơn giản → dùng <strong>Vault</strong> hoặc <strong>Memory</strong></li>
+<li>Dữ liệu &lt; 10 entities — KG overkill</li>
+</ul>
+<h3 id="dashboard-tldr-3-bước_2">TL;DR 3 bước</h3>
+<ol>
+<li>Bật <strong>auto-extract</strong> trong Built-in Tools → Knowledge Graph Settings</li>
+<li>Memory mới ghi sẽ tự sinh entity + relation</li>
+<li>Vào menu <strong>Knowledge Graph</strong> → chọn agent → xem Bảng/Đồ thị + chạy <strong>Gộp trùng</strong> định kỳ</li>
+</ol>
+<h3 id="dashboard-step-by-step_2">Step-by-step</h3>
+<p><strong>Bước 1 — Bật auto-extract:</strong><br />
+- Vào menu <strong>Built-in Tools</strong> → tìm <strong>Knowledge Graph Settings</strong><br />
+- Bật toggle <strong>"Tự động trích xuất khi ghi bộ nhớ"</strong><br />
+- Đặt <strong>Độ tin cậy tối thiểu</strong> = <code>0.7</code> đến <code>0.8</code> (entity dưới ngưỡng bị loại — quá thấp = nhiễu, quá cao = bỏ sót)<br />
+- Chọn <strong>Provider trích xuất</strong> + <strong>Model</strong> có hỗ trợ structured JSON output (vd <code>gemini-2.5-pro</code>, <code>claude-sonnet-4</code>)</p>
+<p><strong>Bước 2 — Trích xuất thủ công</strong> (khi không muốn đợi auto):<br />
+- Menu <strong>Knowledge Graph</strong> → chọn agent → bấm <strong>Trích xuất</strong><br />
+- Paste transcript/note/text vào textarea<br />
+- Chọn Provider + Model + Agent ID → <strong>Trích xuất</strong></p>
+<p><strong>Bước 3 — Xem KG:</strong><br />
+- Menu <strong>Knowledge Graph</strong> → chọn <code>&lt;agent-name&gt;</code><br />
+- Stats: "Thực thể: N" + "Quan hệ: N"<br />
+- 2 tab: <strong>Bảng</strong> (dễ scan, filter) / <strong>Đồ thị</strong> (visualization node-edge, kéo zoom)</p>
+<p><strong>Bước 4 — Gộp trùng</strong> (định kỳ mỗi tuần):<br />
+- Bấm <strong>Gộp trùng</strong> → dialog hiện "{N} ứng viên" — cặp entity giống nhau + score<br />
+- <strong>Gộp</strong> (hợp nhất) hoặc <strong>Bỏ qua</strong> (vd 2 người trùng tên nhưng khác)</p>
+<h3 id="dashboard-verify_2">Verify</h3>
+<p>Click 1 entity bất kỳ → xem <strong>Quan hệ</strong> + nút <strong>Duyệt</strong> (depth 1-2 bước). Đồ thị hiện đúng các quan hệ kỳ vọng (vd Lan → works_at → TechCorp).</p>
+<h3 id="dashboard-pitfalls_2">Pitfalls</h3>
+<ul>
+<li><strong>Min confidence quá thấp (0.5)</strong> → KG nhiễu, trả lời sai</li>
+<li><strong>Min confidence quá cao (0.95)</strong> → bỏ sót thực thể quan trọng</li>
+<li><strong>Traverse 1-2 bước là đủ</strong> — 3+ bước thường rộng quá, kết quả nhiễu</li>
+<li><strong>Gộp trùng định kỳ</strong> — KG nhiều dễ trùng (vd "Lan", "Lan Nguyen", "Nguyen Lan" cùng người)</li>
+<li>⚠️ <strong>PII trong KG</strong>: tên/email/phone bị lưu thành entity. Khi user yêu cầu xóa → phải xóa entity + relation thủ công (GDPR)</li>
+</ul>
+<hr />
+<h2 id="dashboard-d-file-context-tính-cách-agent">D. File context — Tính cách agent</h2>
+<blockquote>
+<p><strong>Lưu ý quan trọng:</strong> sau khi sửa file context, <strong>PHẢI tạo session mới</strong> để thấy thay đổi. Session đang active đã cache system prompt.</p>
+</blockquote>
+<h3 id="dashboard-khi-nào-dùng_3">Khi nào dùng</h3>
+<ul>
+<li>Đổi <strong>cách xưng hô</strong> ("anh/chị" thành "bạn", "tôi" thành "em")</li>
+<li>Đổi <strong>vai trò</strong> (trợ lý chung → chuyên viên BĐS / kế toán / CSKH)</li>
+<li>Đổi <strong>phong cách trả lời</strong> (ngắn gọn vs chi tiết, có emoji vs không)</li>
+</ul>
+<h3 id="dashboard-khi-nào-không-dùng_3">Khi nào KHÔNG dùng</h3>
+<ul>
+<li>Cần đút <strong>dữ liệu</strong> (báo cáo, FAQ) → dùng <strong>Vault</strong> hoặc <strong>Memory</strong></li>
+<li>Cần thêm <strong>năng lực mới</strong> (làm Excel, parse PDF) → tạo <strong>Skill</strong></li>
+</ul>
+<h3 id="dashboard-tldr-3-bước_3">TL;DR 3 bước</h3>
+<ol>
+<li>Vào <strong>Agents</strong> → chọn <code>&lt;agent-name&gt;</code> → tab <strong>Tệp</strong></li>
+<li>Sửa file (<code>SOUL.md</code> cho tính cách, <code>IDENTITY.md</code> cho vai trò) → <strong>Lưu</strong></li>
+<li><strong>Tạo session mới</strong> (xóa cuộc chat cũ hoặc mở channel mới)</li>
+</ol>
+<h3 id="dashboard-4-file-context-vai-trò">4 file context — vai trò</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Vai trò</th>
+<th>Khi sửa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>SOUL.md</code></strong></td>
+<td>Linh hồn, tính cách cốt lõi</td>
+<td>Đổi phong cách, mood, ngôn ngữ chính</td>
+</tr>
+<tr>
+<td><strong><code>IDENTITY.md</code></strong></td>
+<td>Danh tính, vai trò chuyên môn</td>
+<td>Đổi từ trợ lý chung sang chuyên viên cụ thể</td>
+</tr>
+<tr>
+<td><strong><code>USER.md</code></strong></td>
+<td>Thông tin về user (per-user, chỉ Predefined agent)</td>
+<td>Lưu sở thích/ngữ cảnh user. Sửa <strong>per user</strong></td>
+</tr>
+<tr>
+<td><strong><code>HEARTBEAT.md</code></strong></td>
+<td>Checklist agent đọc mỗi lần check-in</td>
+<td>Khi cấu hình Heartbeat (chạy chủ động định kỳ)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Có thể tạo file custom thêm nếu cần. File <code>BOOTSTRAP.md</code> đặc biệt — xem <a href="#trouble-5-bootstrap-trap-agent-kẹt-onboarding-mode">04 — Troubleshooting</a>.</p>
+</blockquote>
+<h3 id="dashboard-step-by-step_3">Step-by-step</h3>
+<p><strong>Bước 1.</strong> Menu <strong>Agents</strong> → click <code>&lt;agent-name&gt;</code> → tab <strong>Tệp</strong>.</p>
+<p><strong>Bước 2.</strong> Click file muốn sửa (vd <code>SOUL.md</code>) → editor markdown mở ra.</p>
+<p><strong>Bước 3.</strong> Sửa nội dung. Mẫu <code>SOUL.md</code> đơn giản:</p>
+<pre><code class="language-markdown"># Linh hồn
+
+Tôi là &lt;agent-name&gt;, trợ lý chuyên về &lt;lĩnh vực&gt;.
+
+Phong cách:
+- Trả lời ngắn gọn, súc tích
+- Xưng hô: &quot;em&quot; với người dùng &quot;anh/chị&quot;
+- Không dùng emoji trừ khi user dùng trước
+- Nếu không chắc, nói thẳng &quot;em chưa rõ&quot; thay vì đoán
+</code></pre>
+<p><strong>Bước 4.</strong> Lưu. Có nút <strong>System Prompt Preview</strong> ngay trong tab Tệp — dùng để xem system prompt thực tế sau khi sửa.</p>
+<p><strong>Bước 5. ⚠️ TẠO SESSION MỚI:</strong><br />
+- Web Chat: bấm <strong>+ New Chat</strong><br />
+- Telegram/Zalo/...: chat từ user khác hoặc xóa session hiện tại trong menu Session</p>
+<h3 id="dashboard-verify_3">Verify</h3>
+<p>Trong session mới, hỏi agent câu test phong cách (vd "Giới thiệu bản thân?"). Output phải khớp <code>SOUL.md</code>/<code>IDENTITY.md</code> mới.</p>
+<p>Nếu vẫn ra phong cách cũ → 99% là chưa tạo session mới.</p>
+<h3 id="dashboard-pitfalls_3">Pitfalls</h3>
+<ul>
+<li>⚠️ <strong>Không tạo session mới = không thấy thay đổi</strong> — đây là pitfall lớn nhất</li>
+<li><strong>Predefined agent có nút "Regenerate Bootstrap Files"</strong> — tái tạo SOUL/IDENTITY/USER khi đổi preset. Cẩn thận: ghi đè file đang có</li>
+<li><strong><code>USER.md</code> trống + <code>BOOTSTRAP.md</code> tồn tại</strong> → agent kẹt onboarding mode (chỉ dùng <code>write_file</code>). Xem <a href="#trouble">04 — Troubleshooting</a></li>
+</ul>
+<hr />
+<h2 id="dashboard-e-skill-cấp-năng-lực-có-sẵn">E. Skill — Cấp năng lực có sẵn</h2>
+<blockquote>
+<p>Section này chỉ về <strong>bật/gắn skill có sẵn</strong> cho agent. <strong>Tạo skill MỚI</strong> → xem <a href="#skill">03 — Tạo Skill</a>.</p>
+</blockquote>
+<h3 id="dashboard-khi-nào-dùng_4">Khi nào dùng</h3>
+<ul>
+<li>Agent cần đọc/ghi file <code>.pdf</code>, <code>.docx</code>, <code>.xlsx</code>, <code>.pptx</code></li>
+<li>Agent cần dùng skill custom đã upload trước đó</li>
+</ul>
+<h3 id="dashboard-tldr-3-bước-3-tầng-phải-làm-cả-3">TL;DR 3 bước (3 tầng — phải làm cả 3)</h3>
+<pre><code>Tầng 1: Skill có trong &quot;kho&quot; (toàn cục)  → Menu Skills → toggle Active
+Tầng 2: Cài deps nếu thiếu                → Panel Missing Dependencies → Install
+Tầng 3: Phát skill cho agent              → Menu Agents → tab Agent → Skills → tick
+</code></pre>
+<p>Không làm cả 3 tầng → agent vẫn không gọi được skill.</p>
+<h3 id="dashboard-step-by-step_4">Step-by-step</h3>
+<p><strong>Tầng 1 — Bật skill toàn cục:</strong><br />
+1. Menu <strong>Skills</strong> → tab <strong>Core (5)</strong> (5 skill hệ thống) hoặc <strong>Custom</strong> (skill upload)<br />
+2. Toggle ở cột <strong>Actions</strong> → trạng thái <code>Active</code></p>
+<p><strong>Tầng 2 — Cài Missing Dependencies (nếu có):</strong><br />
+- Header trang Skills hiện panel <strong>Missing Dependencies</strong> với danh sách dep (vd <code>pip:lxml</code>, <code>npm:lodash</code>)<br />
+- Bấm <strong>Install Dependencies</strong> (cài hết) hoặc <strong>Install</strong> từng cái<br />
+- Sau khi cài xong → bấm <strong>Rescan Deps</strong> ở header</p>
+<blockquote>
+<p>⚠️ Nếu cài fail hàng loạt → container thiếu Python/Node runtime. Vào menu <strong>Packages</strong> cài runtime trong container trước. Không phải lỗi do dep.</p>
+</blockquote>
+<p><strong>Tầng 3 — Gắn skill cho agent:</strong><br />
+1. Menu <strong>Agents</strong> → click <code>&lt;agent-name&gt;</code> → tab <strong>Agent</strong><br />
+2. Cuộn xuống phần <strong>Skills</strong> → tick các skill cần<br />
+3. Phần <strong>Pinned Skills</strong> (tối đa 10) — ghim skill <strong>dùng thường xuyên</strong> vào system prompt (agent thấy ngay, không cần <code>skill_search</code>)<br />
+4. <strong>Lưu</strong></p>
+<h3 id="dashboard-pinned-skills-vs-skills-list-chọn-đúng">Pinned Skills vs Skills List — chọn đúng</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Skills List</th>
+<th>Pinned Skills</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Số lượng</td>
+<td>Không giới hạn</td>
+<td>Max <strong>10</strong></td>
+</tr>
+<tr>
+<td>Cách agent thấy</td>
+<td>Phải gọi <code>skill_search</code> mới tìm ra</td>
+<td>Nhúng thẳng vào system prompt — thấy ngay</td>
+</tr>
+<tr>
+<td>Token</td>
+<td>0 thêm vào prompt</td>
+<td>+vài trăm token/skill</td>
+</tr>
+<tr>
+<td>Dùng khi</td>
+<td>Skill ít gọi, kho nhiều skill</td>
+<td>Skill <strong>dùng mỗi cuộc chat</strong> (vd format response, persona)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Khuyên:</strong> ghim <strong>3-5 skill cốt lõi</strong> nhất, còn lại để Skills List.</p>
+<h3 id="dashboard-verify_4">Verify</h3>
+<p>Mở chat với agent, prompt khớp description skill (vd "Đọc file <code>report.pdf</code> này giúp em" cho skill <code>pdf</code>). Agent phải tự nhận skill và xử lý.</p>
+<p>Nếu agent không gọi → kiểm tra:<br />
+1. Skill toggle Active toàn cục? (Skills page)<br />
+2. Missing deps đã Install hết? (panel deps)<br />
+3. Skill đã tick trong Skills List của agent? (Agent → tab Agent)</p>
+<h3 id="dashboard-pitfalls_4">Pitfalls</h3>
+<ul>
+<li><strong>Quên 1 trong 3 tầng</strong> → agent không gọi được. Pitfall phổ biến nhất</li>
+<li><strong>Pinned quá nhiều skill</strong> (&gt;10 đầy) → token system prompt phình to, đắt tiền không cần thiết</li>
+<li><strong>Visibility Custom Skill = Riêng tư</strong> → agent không thấy. Đổi sang <strong>Nội bộ</strong></li>
+<li><strong>Skill mới upload chưa Rescan Deps</strong> → trạng thái vẫn <code>Missing deps</code> dù đã Install. Bấm Rescan ở header</li>
+</ul>
+<hr />
+<h2 id="dashboard-bảng-tóm-tắt-cho-người-vội">Bảng tóm tắt cho người vội</h2>
+<table>
+<thead>
+<tr>
+<th>Tôi muốn...</th>
+<th>Section</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Đẩy 1 file PDF cho agent đọc</td>
+<td>§A Vault</td>
+<td>Loại = <code>Tài liệu</code>, Phạm vi = <code>Chia sẻ</code></td>
+</tr>
+<tr>
+<td>Ghi note "khách hàng X thích trả lời ngắn"</td>
+<td>§B Memory</td>
+<td>Phạm vi = <code>Cá nhân</code> (per-user)</td>
+</tr>
+<tr>
+<td>Hỏi câu quan hệ ("khách nào mua sản phẩm Y?")</td>
+<td>§C Knowledge Graph</td>
+<td>Bật auto-extract trước</td>
+</tr>
+<tr>
+<td>Đổi cách xưng hô của agent</td>
+<td>§D <code>SOUL.md</code></td>
+<td>Nhớ tạo session mới</td>
+</tr>
+<tr>
+<td>Đổi vai trò agent (trợ lý → CSKH)</td>
+<td>§D <code>IDENTITY.md</code></td>
+<td>Nhớ tạo session mới</td>
+</tr>
+<tr>
+<td>Cấp cho agent dùng skill <code>pdf</code>, <code>docx</code></td>
+<td>§E</td>
+<td>Làm cả 3 tầng (toàn cục + deps + agent grant)</td>
+</tr>
+<tr>
+<td>Tạo skill <strong>mới</strong></td>
+<td><a href="#skill">03 — Tạo Skill</a></td>
+<td>2 path: viết tay ZIP hoặc nhờ agent tự tạo</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dashboard-đào-sâu">Đào sâu</h2>
+<ul>
+<li><strong>Train qua Claude Code</strong> (CLI + API thay vì click) → <a href="#claude">02 — Train via Claude</a></li>
+<li><strong>Tạo Skill mới</strong> → <a href="#skill">03 — Tạo Skill</a></li>
+<li><strong>Lỗi thường gặp</strong> → <a href="#trouble">04 — Troubleshooting</a></li>
+<li><strong>Glossary thuật ngữ</strong> → <a href="#glossary">05 — Glossary</a></li>
+</ul></section>
+<section id="claude" class="doc-section"><h1 id="claude-02-train-agent-qua-claude-code">02 — Train Agent qua Claude Code</h1>
+<blockquote>
+<p><strong>Cảnh báo trước khi bắt đầu:</strong><br />
+⚠️ KHÔNG commit <code>CLAUDE.md</code> chứa <code>&lt;gateway-token&gt;</code> thật vào git public. Token này cấp full quyền API GoClaw.</p>
+</blockquote>
+<hr />
+<h2 id="claude-khi-nào-nên-dùng-claude-code-thay-vì-dashboard">Khi nào nên dùng Claude Code thay vì Dashboard</h2>
+<table>
+<thead>
+<tr>
+<th>Trường hợp</th>
+<th>Dashboard</th>
+<th>Claude Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Đút 1-2 file PDF</td>
+<td>✅ nhanh hơn</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Đút <strong>hàng loạt</strong> file (50+ file) từ folder local</td>
+<td>—</td>
+<td>✅ rất nhanh, dùng SCP + rescan</td>
+</tr>
+<tr>
+<td>Sửa nội dung 1 doc</td>
+<td>✅</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Bulk rename / tổ chức lại path nhiều doc</td>
+<td>—</td>
+<td>✅ script được</td>
+</tr>
+<tr>
+<td>Ghi 1 memory đơn lẻ</td>
+<td>✅</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Sync workspace folder agent → vault định kỳ</td>
+<td>—</td>
+<td>✅ tự động hóa được</td>
+</tr>
+<tr>
+<td>Tạo skill đơn giản</td>
+<td>tab Skills tab Custom</td>
+<td>✅ Path B chat agent (xem <a href="#skill">03</a>)</td>
+</tr>
+<tr>
+<td>Verify nhanh: agent có search ra X không</td>
+<td>tab 🔍 Tìm kiếm</td>
+<td>✅ curl 1 lệnh</td>
+</tr>
+</tbody>
+</table>
+<p>→ <strong>Dashboard cho thao tác lẻ. Claude Code cho thao tác hàng loạt + tự động hóa.</strong></p>
+<hr />
+<h2 id="claude-setup-ban-đầu-1-lần-duy-nhất">Setup ban đầu (1 lần duy nhất)</h2>
+<h3 id="claude-yêu-cầu">Yêu cầu</h3>
+<ul>
+<li>Đã cài <a href="https://claude.com/claude-code">Claude Code</a> trên máy local</li>
+<li>Có <strong>SSH key</strong> vào VPS chứa GoClaw container (nếu muốn thao tác qua DB/file system)</li>
+<li>Biết các thông số:</li>
+<li><code>&lt;your-vps&gt;</code> — host SSH (vd <code>myvps.example.com</code> hoặc IP)</li>
+<li><code>&lt;gateway-token&gt;</code> — lấy từ file <code>.env</code> trên VPS, biến <code>GOCLAW_GATEWAY_TOKEN</code></li>
+<li><code>&lt;agent-key&gt;</code> — slug agent (vd <code>alpha</code>)</li>
+<li><code>&lt;user-id&gt;</code> — user ID để gọi API (lấy từ contact trong dashboard hoặc DB)</li>
+</ul>
+<h3 id="claude-bước-1-tạo-project-folder-local">Bước 1. Tạo project folder local</h3>
+<pre><code class="language-bash">mkdir goclaw-train-&lt;tenant-slug&gt;
+cd goclaw-train-&lt;tenant-slug&gt;
+</code></pre>
+<h3 id="claude-bước-2-tạo-claudemd-chứa-context">Bước 2. Tạo <code>CLAUDE.md</code> chứa context</h3>
+<p>Đây là file Claude Code <strong>tự động đọc</strong> mỗi session — chứa context Goclaw để Claude biết phải làm gì.</p>
+<pre><code class="language-markdown"># GoClaw Train Workspace — &lt;tenant-slug&gt;
+
+## Connection
+
+- VPS host: `&lt;your-vps&gt;` (SSH alias: `&lt;ssh-alias&gt;`)
+- GoClaw API: `http://localhost:18790` (gọi từ VPS) hoặc qua tunnel
+- Container name: `&lt;tenant-slug&gt;-goclaw-1`
+- Postgres container: `&lt;tenant-slug&gt;-postgres-1`
+- Master tenant ID: `0193a5b0-7000-7000-8000-000000000001` (mặc định, không cần header)
+
+## Auth
+
+- Bearer token: `&lt;gateway-token&gt;` (từ `.env` trên VPS, biến `GOCLAW_GATEWAY_TOKEN`)
+- Header bắt buộc cho hầu hết API: `X-GoClaw-User-Id: &lt;user-id&gt;`
+
+## Agent đang train
+
+- Agent key: `&lt;agent-key&gt;`
+- Agent ID: `&lt;agent-id&gt;` (UUID, query qua `psql` hoặc API)
+- Provider/model: &lt;provider&gt;/&lt;model&gt;
+
+## Tasks tôi thường làm
+
+1. **Đút folder local vào Vault**
+   - SCP folder vào `/app/workspace/&lt;agent-key&gt;/` trong container
+   - Gọi `POST /v1/vault/rescan` để index
+   - Verify bằng `POST /v1/vault/search`
+
+2. **Ghi memory cá nhân**
+   - Insert vào DB hoặc gọi API memory create
+
+3. **Build KG từ memory**
+   - Bật auto-extract trong Built-in Tools (1 lần)
+   - Hoặc gọi extract API thủ công
+
+4. **Sửa file context (SOUL.md, IDENTITY.md)**
+   - SCP file vào `/app/data/agent_context/&lt;agent-id&gt;/`
+   - Tạo session mới sau khi sửa
+
+## Quy ước an toàn
+
+- KHÔNG đụng database trực tiếp trừ khi đã backup
+- KHÔNG restart container khi user đang chat với agent
+- Mọi thao tác sửa: log lại trong `LOG.md` để rollback nếu cần
+</code></pre>
+<h3 id="claude-bước-3-tùy-chọn-tạo-ssh-alias">Bước 3. (Tùy chọn) Tạo SSH alias</h3>
+<p>File <code>~/.ssh/config</code>:</p>
+<pre><code>Host &lt;ssh-alias&gt;
+    HostName &lt;your-vps&gt;
+    User &lt;ssh-user&gt;
+    IdentityFile ~/.ssh/&lt;your-key&gt;
+</code></pre>
+<p>Test: <code>ssh &lt;ssh-alias&gt;</code> phải vào được VPS không hỏi password.</p>
+<h3 id="claude-bước-4-test-connection">Bước 4. Test connection</h3>
+<p>Mở Claude Code trong folder vừa tạo. Gõ:</p>
+<pre><code>Test connection: ssh vào &lt;ssh-alias&gt;, kiểm tra container &lt;tenant-slug&gt;-goclaw-1
+running không, gọi GET / để check API health.
+</code></pre>
+<p>Claude sẽ chạy SSH + curl. Phải báo: container <code>Up X days (healthy)</code>, API có response.</p>
+<hr />
+<h2 id="claude-prompt-mẫu-copy-paste-ready">Prompt mẫu — copy-paste-ready</h2>
+<p>Dưới đây là 5 prompt khách dùng thường xuyên. <strong>Paste nguyên văn</strong> vào Claude Code, thay placeholder rồi gửi.</p>
+<h3 id="claude-prompt-1-đút-folder-local-vào-vault">Prompt 1 — Đút folder local vào Vault</h3>
+<pre><code>Đẩy folder local &quot;&lt;đường-dẫn-folder&gt;&quot; lên Vault của agent &lt;agent-key&gt;:
+
+1. SCP toàn bộ file (chỉ .md/.txt/.pdf/.docx/.csv) lên VPS đường dẫn
+   /app/workspace/&lt;agent-key&gt;/&lt;sub-folder-name&gt;/ trong container
+   &lt;tenant-slug&gt;-goclaw-1
+2. Gọi POST /v1/vault/rescan để index
+3. Đợi enrichment xong (poll GET /v1/vault/enrichment/status, phase=done)
+4. Verify bằng POST /v1/vault/search với 1-2 query liên quan nội dung
+5. Báo kết quả: bao nhiêu file đã index, có file nào fail không
+
+Header API: Authorization: Bearer &lt;gateway-token&gt;, X-GoClaw-User-Id: &lt;user-id&gt;
+</code></pre>
+<h3 id="claude-prompt-2-ghi-memory-cá-nhân-cho-1-user">Prompt 2 — Ghi memory cá nhân cho 1 user</h3>
+<pre><code>Ghi memory cho agent &lt;agent-key&gt;, user &lt;user-id&gt;:
+
+Path: notes/&lt;chủ-đề&gt;.md
+Phạm vi: Cá nhân (chỉ user &lt;user-id&gt; này)
+Nội dung:
+&quot;&quot;&quot;
+&lt;paste markdown content tại đây&gt;
+&quot;&quot;&quot;
+
+Insert vào DB qua psql hoặc gọi API memory create endpoint.
+Sau đó gọi semantic search test với câu: &quot;&lt;câu-test-liên-quan&gt;&quot;
+để verify đã index xong (score &gt;0.5 là đạt).
+</code></pre>
+<h3 id="claude-prompt-3-build-knowledge-graph-từ-transcript">Prompt 3 — Build Knowledge Graph từ transcript</h3>
+<pre><code>Build KG cho agent &lt;agent-key&gt; từ transcript dưới đây:
+
+Transcript:
+&quot;&quot;&quot;
+&lt;paste transcript cuộc gặp/note tại đây&gt;
+&quot;&quot;&quot;
+
+1. Gọi extract endpoint với provider &lt;provider&gt; + model có structured output
+   (vd gemini-2.5-pro hoặc claude-sonnet-4)
+2. Min confidence: 0.7
+3. Gán entity vào agent_id &lt;agent-id&gt;
+4. Sau khi extract, query DB để xem entity + relation đã tạo
+5. Báo: bao nhiêu entity mới, bao nhiêu relation mới, có cặp trùng (dedup
+   candidate) không
+</code></pre>
+<h3 id="claude-prompt-4-sửa-file-context-soulmd-identitymd">Prompt 4 — Sửa file context (SOUL.md / IDENTITY.md)</h3>
+<pre><code>Sửa SOUL.md của agent &lt;agent-key&gt;:
+
+1. Đọc file hiện tại tại /app/data/agent_context/&lt;agent-id&gt;/SOUL.md
+   (trong container &lt;tenant-slug&gt;-goclaw-1)
+2. Update theo nội dung sau:
+&quot;&quot;&quot;
+&lt;paste nội dung mới&gt;
+&quot;&quot;&quot;
+3. Lưu lại
+4. ⚠️ Tạo session mới: gọi DELETE session hiện tại của user &lt;user-id&gt;
+   với agent &lt;agent-key&gt; (hoặc reset session)
+5. Gợi ý anh test: chat 1 câu để verify phong cách mới đã apply
+
+LƯU Ý: cache trước khi sửa — copy file gốc thành SOUL.md.bak để rollback
+nếu cần.
+</code></pre>
+<h3 id="claude-prompt-5-lập-lịch-cron-đọc-file-định-kỳ">Prompt 5 — Lập lịch Cron đọc file định kỳ</h3>
+<pre><code>Tạo cron job cho agent &lt;agent-key&gt;:
+
+Lịch: &lt;every X minutes / cron expression / once at TIME&gt;
+Múi giờ: Asia/Ho_Chi_Minh (BẮT BUỘC, default UTC sẽ sai 7 tiếng)
+Task: &lt;mô tả việc agent sẽ làm khi tick — vd &quot;đọc file
+/app/workspace/&lt;agent-key&gt;/inbox/ và nếu có file mới thì tóm tắt
+gửi vào channel &lt;channel-slug&gt;&quot;&gt;
+
+Delivery: gửi kết quả vào channel &lt;channel-slug&gt;, chat ID &lt;chat-id&gt;
+Stateless: bật (job chạy thường xuyên, không cần lưu run log)
+
+Sau khi tạo, gọi &quot;Chạy thử&quot; 1 lần để verify.
+</code></pre>
+<hr />
+<h2 id="claude-verify-qua-api-các-lệnh-curl-thường-dùng">Verify qua API — các lệnh curl thường dùng</h2>
+<p>Em (Claude) thường chạy các lệnh này khi anh nhờ verify. Anh có thể chạy thủ công nếu cần.</p>
+<h3 id="claude-health-check">Health check</h3>
+<pre><code class="language-bash">ssh &lt;ssh-alias&gt; &quot;curl -s http://localhost:18790/health&quot;
+</code></pre>
+<h3 id="claude-vault-enrichment-status">Vault enrichment status</h3>
+<pre><code class="language-bash">ssh &lt;ssh-alias&gt; &quot;curl -s -H 'Authorization: Bearer &lt;gateway-token&gt;' \
+  -H 'X-GoClaw-User-Id: &lt;user-id&gt;' \
+  http://localhost:18790/v1/vault/enrichment/status&quot;
+</code></pre>
+<p>Output: <code>{"phase":"done","done":N,"total":N,"error_count":0,"last_error":""}</code>. <code>error_count &gt; 0</code> = có file lỗi.</p>
+<h3 id="claude-vault-search">Vault search</h3>
+<pre><code class="language-bash">ssh &lt;ssh-alias&gt; &quot;curl -s -X POST \
+  -H 'Authorization: Bearer &lt;gateway-token&gt;' \
+  -H 'X-GoClaw-User-Id: &lt;user-id&gt;' \
+  -H 'Content-Type: application/json' \
+  -d '{\&quot;query\&quot;:\&quot;&lt;câu-tìm&gt;\&quot;,\&quot;limit\&quot;:5}' \
+  http://localhost:18790/v1/vault/search&quot;
+</code></pre>
+<h3 id="claude-chat-thử-với-agent-openai-compat">Chat thử với agent (OpenAI-compat)</h3>
+<pre><code class="language-bash">ssh &lt;ssh-alias&gt; &quot;curl -s -X POST \
+  -H 'Authorization: Bearer &lt;gateway-token&gt;' \
+  -H 'X-GoClaw-User-Id: &lt;user-id&gt;' \
+  -H 'Content-Type: application/json' \
+  -d '{\&quot;model\&quot;:\&quot;agent:&lt;agent-key&gt;\&quot;,\&quot;messages\&quot;:[{\&quot;role\&quot;:\&quot;user\&quot;,\&quot;content\&quot;:\&quot;&lt;câu-test&gt;\&quot;}]}' \
+  http://localhost:18790/v1/chat/completions&quot;
+</code></pre>
+<blockquote>
+<p>Lưu ý: model phải là <code>agent:&lt;agent-key&gt;</code> (có prefix <code>agent:</code>). Nếu chỉ pass <code>&lt;agent-key&gt;</code> sẽ trả lỗi "agent not found: default".</p>
+</blockquote>
+<h3 id="claude-query-db-trực-tiếp-xem-agent-config-list-skills">Query DB trực tiếp (xem agent config, list skills)</h3>
+<pre><code class="language-bash">ssh &lt;ssh-alias&gt; &quot;docker exec &lt;tenant-slug&gt;-postgres-1 psql -U goclaw -d goclaw \
+  -c \&quot;SELECT agent_key, display_name, provider, model FROM agents WHERE deleted_at IS NULL;\&quot;&quot;
+</code></pre>
+<hr />
+<h2 id="claude-pitfalls-thường-gặp">Pitfalls thường gặp</h2>
+<h3 id="claude-header-auth">Header &amp; Auth</h3>
+<ul>
+<li>⚠️ <strong>Quên header <code>X-GoClaw-User-Id</code></strong> → API trả 401 <em>"X-GoClaw-User-Id header is required"</em>. Hầu hết endpoint cần header này</li>
+<li><strong>Quên <code>Authorization: Bearer</code></strong> → 401 unauthorized</li>
+<li><strong>Token sai/đã rotate</strong> → 403. Lấy lại token từ <code>.env</code> trên VPS</li>
+</ul>
+<h3 id="claude-tenant">Tenant</h3>
+<ul>
+<li><strong>Master tenant ID là cố định</strong> <code>0193a5b0-7000-7000-8000-000000000001</code>. Không cần header <code>X-GoClaw-Tenant-Id</code> cho master</li>
+<li>Nếu làm việc với <strong>tenant khác master</strong> → phải set header <code>X-GoClaw-Tenant-Id: &lt;tenant-uuid&gt;</code></li>
+</ul>
+<h3 id="claude-encoding">Encoding</h3>
+<ul>
+<li>File markdown viết trên Windows có thể có <strong>UTF-8 BOM</strong> (3 byte đầu) → một số parser lỗi. Lưu file UTF-8 không BOM:</li>
+<li>VS Code: status bar dưới chân → click <code>UTF-8 with BOM</code> → chọn <code>UTF-8</code></li>
+<li>Notepad++: Encoding → Convert to UTF-8 (không phải UTF-8 BOM)</li>
+</ul>
+<h3 id="claude-session-cache">Session cache</h3>
+<ul>
+<li>Sau khi <strong>sửa file context</strong> (SOUL.md, IDENTITY.md, USER.md): session đang active <strong>đã cache system prompt</strong> → không thấy thay đổi. <strong>Phải tạo session mới</strong></li>
+</ul>
+<h3 id="claude-model-specific">Model-specific</h3>
+<ul>
+<li><strong>Gemma models</strong> không accept <code>thinking_level</code> parameter → nếu agent dùng Gemma, set <code>thinking_level=''</code> (rỗng) ở dialog Nâng cao agent. Nếu không sẽ lỗi 400 <em>"Thinking level is not supported for this model"</em></li>
+</ul>
+<h3 id="claude-file-system">File system</h3>
+<ul>
+<li>Mặc định trong container, owner workspace là <code>goclaw:goclaw</code> (uid 1000). <code>docker exec</code> thường cần <code>-u 0</code> cho thao tác cần root (vd ghi vào folder system). <code>docker cp</code> thì thoải mái</li>
+<li>Đường dẫn workspace cho master tenant: <code>/app/workspace/&lt;agent-key&gt;/</code> (không có prefix <code>tenants/&lt;slug&gt;/</code>)</li>
+</ul>
+<h3 id="claude-cron">Cron</h3>
+<ul>
+<li>⚠️ <strong>Default múi giờ UTC</strong> — cron <code>0 9 * * *</code> thực tế chạy <strong>16:00 VN</strong> (UTC+7). Luôn set <code>Asia/Ho_Chi_Minh</code></li>
+<li><strong>Stateless mode</strong> nên BẬT cho cron tần suất cao (mỗi 5 phút) → không phình <code>cron_run_logs</code> table</li>
+</ul>
+<hr />
+<h2 id="claude-workflow-phối-hợp-claude-dashboard">Workflow phối hợp Claude + Dashboard</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Tool</th>
+<th>Việc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Setup ban đầu</strong></td>
+<td>Dashboard</td>
+<td>Tạo agent, gắn channel, đặt budget, bật built-in tools</td>
+</tr>
+<tr>
+<td><strong>Onboarding kiến thức</strong></td>
+<td>Claude Code</td>
+<td>Đút hàng loạt file vào Vault qua SCP + rescan</td>
+</tr>
+<tr>
+<td><strong>Tinh chỉnh</strong></td>
+<td>Dashboard</td>
+<td>Edit metadata doc, đổi visibility skill, ghim Pinned Skill</td>
+</tr>
+<tr>
+<td><strong>Train hằng ngày</strong></td>
+<td>Cả 2</td>
+<td>Note ngắn → Dashboard. Bulk import → Claude</td>
+</tr>
+<tr>
+<td><strong>Tạo skill mới</strong></td>
+<td><a href="#skill-path-a-tự-viết-upload-zip">Path A</a> Dashboard / <a href="#skill-path-b-nhờ-agent-tự-tạo-qua-chat">Path B</a> Chat</td>
+<td>Tùy độ phức tạp</td>
+</tr>
+<tr>
+<td><strong>Verify</strong></td>
+<td>Cả 2</td>
+<td>Dashboard 🔍 Tìm kiếm / <code>curl /v1/vault/search</code></td>
+</tr>
+<tr>
+<td><strong>Khi gặp lỗi</strong></td>
+<td>Claude Code</td>
+<td>Query DB / xem log container nhanh hơn click dashboard</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="claude-đào-sâu">Đào sâu</h2>
+<ul>
+<li><strong>Chi tiết 5 cách train (UI version)</strong> → <a href="#dashboard">01 — Train Dashboard</a></li>
+<li><strong>Tạo Skill (Path A &amp; Path B)</strong> → <a href="#skill">03 — Tạo Skill</a></li>
+<li><strong>Lỗi thường gặp</strong> → <a href="#trouble">04 — Troubleshooting</a></li>
+<li><strong>Glossary</strong> → <a href="#glossary">05 — Glossary</a></li>
+</ul></section>
+<section id="skill" class="doc-section"><h1 id="skill-03-tạo-skill-mới">03 — Tạo Skill mới</h1>
+<blockquote>
+<p><strong>Cảnh báo trước khi bắt đầu:</strong><br />
+⚠️ Tên slug của skill <strong>không sửa được sau upload</strong>. Đặt sai phải xóa upload lại — mất history version.</p>
+</blockquote>
+<hr />
+<h2 id="skill-tổng-quan-2-path-tạo-skill">Tổng quan: 2 path tạo skill</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Path A — Tự viết + upload ZIP</strong></th>
+<th><strong>Path B — Nhờ agent tự tạo</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cần biết</td>
+<td>YAML + Markdown + (tùy) Python</td>
+<td>Chỉ cần biết mô tả nghiệp vụ bằng tiếng Việt</td>
+</tr>
+<tr>
+<td>Thời gian</td>
+<td>30 phút – 2 giờ (1 skill)</td>
+<td>5-15 phút (1 skill)</td>
+</tr>
+<tr>
+<td>Chất lượng</td>
+<td>Cao nếu biết viết. Có toàn quyền tinh chỉnh</td>
+<td>Tốt cho skill đơn giản. Skill phức tạp có thể cần Path A</td>
+</tr>
+<tr>
+<td>Tools cần</td>
+<td>File editor, ZIP tool</td>
+<td>Skill <code>skill-creator</code> đã gắn vào agent</td>
+</tr>
+<tr>
+<td>Khi nào dùng</td>
+<td>Có file SKILL.md sẵn / copy từ chỗ khác / cần script Python phức tạp</td>
+<td>Mô tả nghiệp vụ bằng lời → để agent sinh code</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="skill-path-a-tự-viết-upload-zip">Path A — Tự viết + Upload ZIP</h2>
+<h3 id="skill-bước-1-chuẩn-bị-file-skillmd">Bước 1. Chuẩn bị file SKILL.md</h3>
+<p>File <code>SKILL.md</code> là "sách hướng dẫn" agent đọc khi cần dùng skill. <strong>Bắt buộc</strong> có YAML frontmatter ở đầu file:</p>
+<pre><code class="language-markdown">---
+name: ten-skill-cua-ban
+description: Use this skill whenever the user wants to &lt;mô tả ngắn&gt;. Trigger contexts include &lt;ví dụ 1&gt;, &lt;ví dụ 2&gt;, &lt;ví dụ 3&gt;.
+license: Proprietary
+---
+
+# Hướng dẫn xử lý &lt;chủ đề&gt;
+
+## Khi nào dùng
+- Trường hợp A
+- Trường hợp B
+
+## Các bước thực hiện
+1. ...
+2. ...
+3. ...
+
+## Ví dụ
+...
+</code></pre>
+<p><strong>Quy tắc viết description:</strong><br />
+- Bắt đầu bằng <strong>"Use this skill whenever..."</strong> — hệ thống dùng BM25 search dựa vô đây<br />
+- Description <strong>"pushy"</strong> (đẩy mạnh): kể trigger cụ thể, ví dụ, tên file/extension<br />
+- Tránh mô tả mơ hồ: ❌ "Data processing skill" ✅ "Process CSV files. Use whenever user uploads .csv, mentions tables, asks to extract from spreadsheets"</p>
+<h3 id="skill-bước-2-tùy-chọn-thêm-scriptsreferences">Bước 2. (Tùy chọn) Thêm scripts/references</h3>
+<p>Cấu trúc thư mục skill đầy đủ:</p>
+<pre><code>ten-skill-cua-ban/
+├── SKILL.md              ← BẮT BUỘC, ở thư mục gốc
+├── scripts/              ← (tùy chọn) script Python/JS
+│   ├── extract.py
+│   └── requirements.txt  ← khai báo dep Python
+├── references/           ← (tùy chọn) doc loaded khi cần
+│   └── api-spec.md
+└── assets/               ← (tùy chọn) file mẫu
+    └── template.xlsx
+</code></pre>
+<h3 id="skill-bước-3-tạo-file-zip-đúng-format">Bước 3. Tạo file ZIP đúng format</h3>
+<p>⚠️ <strong>PITFALL phổ biến nhất:</strong> ZIP có folder bọc bên ngoài.</p>
+<p>❌ <strong>SAI</strong> (folder bọc — SKILL.md không ở root):</p>
+<pre><code>ten-skill.zip
+└── ten-skill/             ← folder bọc, sai
+    ├── SKILL.md
+    └── scripts/
+</code></pre>
+<p>✅ <strong>ĐÚNG</strong> (zip thẳng nội dung):</p>
+<pre><code>ten-skill.zip
+├── SKILL.md               ← ngay root
+└── scripts/
+</code></pre>
+<p><strong>Cách zip đúng trên Windows:</strong><br />
+1. Mở folder skill (vào TRONG folder)<br />
+2. <code>Ctrl + A</code> chọn tất cả file/folder bên trong<br />
+3. Chuột phải → <strong>Compress to ZIP</strong><br />
+4. <strong>KHÔNG</strong> click chuột phải lên folder skill rồi compress (cách này tạo folder bọc)</p>
+<p><strong>Cách zip đúng trên Mac/Linux:</strong></p>
+<pre><code class="language-bash">cd ten-skill
+zip -r ../ten-skill.zip .
+</code></pre>
+<h3 id="skill-bước-4-upload-qua-dashboard">Bước 4. Upload qua Dashboard</h3>
+<ol>
+<li>Menu <strong>Skills</strong> → tab <strong>Custom</strong></li>
+<li>Drop file <code>.zip</code> vào dropzone (hoặc click chọn file)</li>
+<li>Hệ thống validate → nếu OK → skill xuất hiện trong list</li>
+</ol>
+<p><strong>Giới hạn:</strong><br />
+- Max <strong>20MB / file ZIP</strong><br />
+- Max <strong>50 skill / 1 ZIP</strong> (multi-skill ZIP)</p>
+<h3 id="skill-bước-5-cấu-hình-skill-sau-upload">Bước 5. Cấu hình skill sau upload</h3>
+<table>
+<thead>
+<tr>
+<th>Trường</th>
+<th>Sửa được?</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tên (slug)</strong></td>
+<td>❌ KHÔNG</td>
+<td>Đặt đúng từ đầu, sai phải xóa upload lại</td>
+</tr>
+<tr>
+<td><strong>Mô tả</strong></td>
+<td>✅</td>
+<td>Bấm bút chì cột Actions. Phải bắt đầu <em>"Use this skill whenever..."</em></td>
+</tr>
+<tr>
+<td><strong>Hiển thị (Visibility)</strong></td>
+<td>✅</td>
+<td>Click badge cột Hiển thị: <code>Riêng tư</code> / <code>Nội bộ</code> (default an toàn) / <code>Công khai</code></td>
+</tr>
+<tr>
+<td><strong>Tags</strong></td>
+<td>✅</td>
+<td>Lọc theo domain (vd <code>bds</code>, <code>finance</code>)</td>
+</tr>
+<tr>
+<td><strong>Toggle Active</strong></td>
+<td>✅</td>
+<td>Cột Actions toggle bật/tắt</td>
+</tr>
+</tbody>
+</table>
+<h3 id="skill-bước-6-cài-missing-dependencies-nếu-có">Bước 6. Cài Missing Dependencies (nếu có)</h3>
+<p>Nếu skill có <code>scripts/requirements.txt</code> (Python) hoặc <code>package.json</code> (Node):<br />
+- Header trang Skills hiện panel <strong>Missing Dependencies</strong><br />
+- Bấm <strong>Install Dependencies</strong> (cài hết) hoặc <strong>Install</strong> từng cái<br />
+- Sau cài xong → <strong>Rescan Deps</strong></p>
+<h3 id="skill-bước-7-gắn-skill-cho-agent">Bước 7. Gắn skill cho agent</h3>
+<p>(Đã hướng dẫn ở <a href="#dashboard-e-skill-cấp-năng-lực-có-sẵn">01 §E</a>)</p>
+<p>Tóm tắt: <strong>Agents</strong> → <code>&lt;agent-name&gt;</code> → tab <strong>Agent</strong> → phần <strong>Skills</strong> → tick → Lưu.</p>
+<h3 id="skill-verify-path-a">Verify Path A</h3>
+<p>Chat với agent, prompt khớp description skill. Vd skill <code>pdf-vietnamese-invoice</code> description "Use this skill whenever user wants to extract data from Vietnamese invoice PDFs":</p>
+<p>User: <em>"Đọc file hóa đơn này giúp em: invoice.pdf"</em><br />
+→ Agent phải tự gọi skill và trả về data có cấu trúc.</p>
+<hr />
+<h2 id="skill-path-b-nhờ-agent-tự-tạo-qua-chat">Path B — Nhờ agent tự tạo qua chat</h2>
+<h3 id="skill-điều-kiện-tiên-quyết">Điều kiện tiên quyết</h3>
+<p>Agent <code>&lt;agent-name&gt;</code> phải có đủ:</p>
+<table>
+<thead>
+<tr>
+<th>Thứ</th>
+<th>Cấu hình ở đâu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Skill <code>skill-creator</code></strong> trong Skills List (lý tưởng: Pinned)</td>
+<td><strong>Agents</strong> → <code>&lt;agent-name&gt;</code> → tab <strong>Agent</strong> → phần <strong>Skills</strong> → tick <code>skill-creator</code></td>
+</tr>
+<tr>
+<td><strong>2. Tools <code>skill_search</code>, <code>use_skill</code>, <code>publish_skill</code>, <code>skill_manage</code></strong> đã bật</td>
+<td><strong>Built-in Tools</strong> → danh mục <strong>Skill</strong> → toggle ON cả 4</td>
+</tr>
+<tr>
+<td><strong>3. Tools file system</strong> (<code>write_file</code>, <code>edit</code>, <code>read_file</code>, <code>list_files</code>)</td>
+<td><strong>Built-in Tools</strong> → danh mục <strong>Hệ thống tệp</strong> → toggle ON</td>
+</tr>
+<tr>
+<td><strong>4. Tool <code>exec</code></strong></td>
+<td><strong>Built-in Tools</strong> → danh mục <strong>Thời gian chạy</strong> → toggle ON. Cần để agent test script Python</td>
+</tr>
+<tr>
+<td><strong>5. Sandbox</strong> (khuyến nghị)</td>
+<td><strong>Agents</strong> → <code>&lt;agent-name&gt;</code> → ⚙️ Nâng cao → <strong>Sandbox</strong> mode = <code>non-main</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="skill-workflow-agent-sẽ-làm-10-bước-eval-driven">Workflow agent sẽ làm (10 bước eval-driven)</h3>
+<p>Agent đọc skill <code>skill-creator</code> → tự thực hiện:</p>
+<ol>
+<li><strong>Capture Intent</strong> — Hỏi user: skill này làm gì? Trigger khi nào? Output cấu trúc thế nào?</li>
+<li><strong>Research</strong> — Tìm best practices, tham khảo skill có sẵn</li>
+<li><strong>Plan</strong> — Xác định scripts/references/assets cần</li>
+<li><strong>Initialize</strong> — Chạy <code>scripts/init_skill.py &lt;name&gt;</code> tạo skeleton</li>
+<li><strong>Write</strong> — Sinh <code>SKILL.md</code> + scripts vào workspace</li>
+<li><strong>Test &amp; Evaluate</strong> — Chạy eval suite, grade outputs</li>
+<li><strong>Optimize Description</strong> — Tối ưu trigger với AI</li>
+<li><strong>Publish</strong> — Gọi tool <code>publish_skill(path)</code> → tự đăng ký vào DB hệ thống</li>
+<li><strong>Package</strong> (tùy chọn) — Đóng ZIP để export</li>
+<li><strong>Iterate</strong> — Lặp từ feedback</li>
+</ol>
+<h3 id="skill-step-by-step">Step-by-step</h3>
+<p><strong>Bước 1.</strong> Mở chat với <code>&lt;agent-name&gt;</code> (Web Chat hoặc channel đã pair).</p>
+<p><strong>Bước 2.</strong> Prompt mẫu:</p>
+<pre><code>Em ơi tạo cho anh skill mới làm &lt;việc cụ thể&gt;.
+
+Yêu cầu:
+- Trigger khi user nói: &quot;&lt;từ khóa 1&gt;&quot;, &quot;&lt;từ khóa 2&gt;&quot;
+- Input: &lt;loại file/text/data&gt;
+- Output: &lt;kết quả mong muốn&gt;
+- Giới hạn: &lt;nếu có&gt;
+
+Em chạy đầy đủ 10 bước eval-driven nha — viết SKILL.md, viết script
+nếu cần, test, optimize description, rồi publish vào hệ thống.
+Sau khi publish, báo lại slug skill để anh kiểm tra.
+</code></pre>
+<p><strong>Bước 3.</strong> Agent sẽ hỏi lại các câu để hiểu rõ. Trả lời cụ thể.</p>
+<p><strong>Bước 4.</strong> Đợi agent chạy workflow (5-15 phút tùy skill phức tạp).</p>
+<p><strong>Bước 5.</strong> Agent báo "đã publish skill <code>&lt;slug&gt;</code>, anh kiểm tra ở <strong>Skills → tab Custom</strong>".</p>
+<h3 id="skill-verify-path-b">Verify Path B</h3>
+<ol>
+<li>Vào menu <strong>Skills</strong> → tab <strong>Custom</strong> → tìm skill mới có slug agent báo</li>
+<li>Click vào → kiểm tra <code>SKILL.md</code> content có đúng yêu cầu không</li>
+<li>Test chat với agent prompt khớp description skill mới</li>
+<li>Nếu không hoạt động đúng → bảo agent <strong>iterate</strong> (sửa lại):<br />
+<code>Skill &lt;slug&gt; chưa đúng ở chỗ &lt;X&gt;. Em sửa lại và publish version mới nha.</code></li>
+</ol>
+<h3 id="skill-khi-nào-path-b-fail">Khi nào Path B fail</h3>
+<ul>
+<li>Model agent <strong>quá nhỏ/yếu</strong> → không hoàn thành 10 bước eval. Cách khắc phục:</li>
+<li>Bật <strong>Subagents</strong> + <strong>Model Override</strong> (Sonnet/Pro) ở Nâng cao agent</li>
+<li>Hoặc tạo agent riêng chuyên tạo skill, cấu hình model mạnh + skill <code>skill-creator</code></li>
+<li>Skill phức tạp (cần parse format đặc thù, gọi API ngoài) → có thể Path A nhanh hơn</li>
+</ul>
+<h3 id="skill-pitfalls-path-b">Pitfalls Path B</h3>
+<ul>
+<li><strong>Slug trùng skill hệ thống</strong> (<code>pdf</code>/<code>docx</code>/<code>xlsx</code>/<code>pptx</code>/<code>skill-creator</code>) → publish fail. Đặt tên khác</li>
+<li><strong>Agent không có quyền <code>exec</code></strong> → không test được script → publish bừa, skill chạy lỗi sau</li>
+<li><strong><code>skill-creator</code> chưa được gắn vào agent</strong> → agent nói "tôi không biết tạo skill thế nào". Quay về điều kiện tiên quyết</li>
+</ul>
+<hr />
+<h2 id="skill-skillmd-format-chuẩn-chi-tiết">SKILL.md format chuẩn — chi tiết</h2>
+<h3 id="skill-yaml-frontmatter-bắt-buộc">YAML frontmatter (bắt buộc)</h3>
+<pre><code class="language-yaml">---
+name: &lt;slug-skill&gt;           # bắt buộc, lowercase, dash-separated, không số đầu
+description: Use this skill whenever &lt;mô tả &quot;pushy&quot;&gt;  # bắt buộc, ≤1024 ký tự, BM25 search dựa vô đây
+license: &lt;license&gt;           # bắt buộc, vd &quot;Proprietary&quot;, &quot;MIT&quot;, &quot;Complete terms in LICENSE.txt&quot;
+metadata:                    # tùy chọn
+  author: &lt;tên/email&gt;
+  version: &quot;1.0.0&quot;
+---
+</code></pre>
+<h3 id="skill-body-markdown-bắt-buộc">Body markdown (bắt buộc)</h3>
+<ul>
+<li><strong>&lt;300 dòng</strong> SKILL.md (giới hạn để agent load nhanh)</li>
+<li><strong>Imperative form</strong>: "Để xử lý X, làm Y" thay vì "Bạn nên làm Y"</li>
+<li><strong>Numbered workflow steps</strong> rõ ràng</li>
+<li><strong>Concrete examples</strong>: lệnh, code, API call cụ thể</li>
+</ul>
+<h3 id="skill-resources-tùy-chọn">Resources tùy chọn</h3>
+<table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>Mục đích</th>
+<th>Giới hạn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scripts/</code></td>
+<td>Code thực thi (Python/JS/Bash)</td>
+<td>Không giới hạn — chạy không cần load</td>
+</tr>
+<tr>
+<td><code>references/</code></td>
+<td>Doc chi tiết loaded khi cần</td>
+<td>&lt;300 dòng/file</td>
+</tr>
+<tr>
+<td><code>agents/</code></td>
+<td>Eval agent templates</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>assets/</code></td>
+<td>File mẫu (template, sample data)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="skill-per-group-skill-filter-channel">Per-group skill filter (Channel)</h2>
+<blockquote>
+<p>Use case: Agent chạy trên Telegram group. Muốn member group <strong>không</strong> dùng được skill <code>skill-creator</code> (chỉ admin DM riêng mới dùng).</p>
+</blockquote>
+<h3 id="skill-cấu-hình">Cấu hình</h3>
+<ol>
+<li>Menu <strong>Channel</strong> → click channel của agent → tab <strong>Nhóm</strong></li>
+<li>Bấm <strong>Thêm nhóm</strong> → nhập <strong>ID nhóm</strong> (vd <code>-100123456</code> cho Telegram, <code>*</code> wildcard cho mọi group)</li>
+<li>Trong nhóm vừa thêm có field <strong>"Bộ lọc skill"</strong>:<br />
+   - <strong>Trống</strong> = kế thừa từ Skills List của agent (default)<br />
+   - <strong>Tick chọn</strong> = chỉ skill được tick mới gọi được trong group này</li>
+</ol>
+<h3 id="skill-ví-dụ-cấu-hình-an-toàn">Ví dụ cấu hình an toàn</h3>
+<ul>
+<li><strong>Group</strong> (open cho team): tick <code>pdf</code>, <code>docx</code>, <code>xlsx</code>, <code>pptx</code> (4 skill xử lý file thông thường). <strong>KHÔNG</strong> tick <code>skill-creator</code></li>
+<li><strong>DM riêng admin</strong>: không filter (full skill, có cả <code>skill-creator</code>)</li>
+</ul>
+<h3 id="skill-verify">Verify</h3>
+<p>Trong group: bảo agent "tạo skill mới abc". Agent phải reply không có quyền hoặc không tìm thấy skill-creator.</p>
+<p>Trong DM: bảo agent câu tương tự — agent phải chạy workflow tạo skill.</p>
+<hr />
+<h2 id="skill-pitfalls-tổng-hợp">Pitfalls tổng hợp</h2>
+<h3 id="skill-khi-upload-zip">Khi upload ZIP</h3>
+<ul>
+<li>ZIP có folder bọc → SKILL.md không ở root → bị từ chối</li>
+<li>Slug trùng skill hệ thống (<code>pdf</code>/<code>docx</code>/<code>xlsx</code>/<code>pptx</code>/<code>skill-creator</code>) → bị từ chối</li>
+<li>File &gt;20MB hoặc &gt;50 skill/ZIP → bị từ chối</li>
+<li>Thiếu YAML frontmatter / thiếu <code>name</code> → bị từ chối</li>
+</ul>
+<h3 id="skill-sau-upload">Sau upload</h3>
+<ul>
+<li>Đặt sai slug → phải <strong>xóa upload lại</strong> (slug không sửa được)</li>
+<li>Description viết không "pushy" → agent không tìm thấy skill khi cần</li>
+<li>Visibility = <code>Riêng tư</code> → agent không thấy. Đổi <code>Nội bộ</code></li>
+<li>Quên Install Missing Deps → skill báo lỗi runtime khi gọi</li>
+</ul>
+<h3 id="skill-khi-gắn-vào-agent">Khi gắn vào agent</h3>
+<ul>
+<li>Quên 1 trong 3 tầng (toàn cục + deps + agent grant) — xem <a href="#dashboard-e-skill-cấp-năng-lực-có-sẵn">01 §E</a></li>
+<li>Pinned &gt;10 skill — không cho phép, hoặc nếu cho thì system prompt phình to</li>
+</ul>
+<h3 id="skill-khi-tạo-qua-agent-path-b">Khi tạo qua agent (Path B)</h3>
+<ul>
+<li>Agent yếu → không hoàn thành 10 bước</li>
+<li>Sandbox tắt + tool <code>exec</code> tắt → agent không test được script</li>
+<li>Skill cần dep Python ngoài stdlib → agent phải kèm <code>requirements.txt</code> trong skill folder</li>
+</ul>
+<hr />
+<h2 id="skill-đào-sâu">Đào sâu</h2>
+<ul>
+<li><strong>Cài skill có sẵn cho agent</strong> (không tạo mới) → <a href="#dashboard-e-skill-cấp-năng-lực-có-sẵn">01 §E</a></li>
+<li><strong>Lỗi thường gặp</strong> → <a href="#trouble">04 — Troubleshooting</a></li>
+<li><strong>Train qua Claude Code</strong> (gồm prompt mẫu tạo skill từ CLI) → <a href="#claude">02 — Train via Claude</a></li>
+<li><strong>Glossary</strong> → <a href="#glossary">05 — Glossary</a></li>
+</ul></section>
+<section id="trouble" class="doc-section"><h1 id="trouble-04-troubleshooting-lỗi-thường-gặp-cách-fix">04 — Troubleshooting (lỗi thường gặp + cách fix)</h1>
+<blockquote>
+<p><strong>Cách dùng file này:</strong> scan tiêu đề tìm lỗi giống của bạn → đọc Diagnose để xác minh → áp dụng Fix.</p>
+<p>Format mỗi case: <strong>Symptom</strong> (triệu chứng) → <strong>Diagnose</strong> (cách check chắc đúng lỗi này) → <strong>Fix</strong> (cách xử lý) → <strong>Prevent</strong> (tránh tái diễn).</p>
+</blockquote>
+<hr />
+<h2 id="trouble-mục-lục">Mục lục</h2>
+<ol>
+<li><a href="#trouble-1-vault-upload-xong-nhưng-search-không-ra">Vault: upload xong nhưng search không ra</a></li>
+<li><a href="#trouble-2-memory-search-trả-0-kết-quả">Memory: search trả 0 kết quả</a></li>
+<li><a href="#trouble-3-skill-upload-báo-missing-dependencies">Skill: upload báo Missing Dependencies</a></li>
+<li><a href="#trouble-4-agent-quên-file-context-vừa-sửa">Agent "quên" file context vừa sửa</a></li>
+<li><a href="#trouble-5-bootstrap-trap-agent-kẹt-onboarding-mode">Bootstrap trap: agent kẹt onboarding mode</a></li>
+<li><a href="#trouble-6-cron-không-chạy-đúng-giờ">Cron không chạy đúng giờ</a></li>
+<li><a href="#trouble-7-per-group-skill-filter-không-apply">Per-group skill filter không apply</a></li>
+<li><a href="#trouble-8-api-trả-401-mặc-dù-có-token">API trả 401 mặc dù có token</a></li>
+<li><a href="#trouble-9-agent-vượt-budget-bị-chặn-api">Agent vượt budget, bị chặn API</a></li>
+<li><a href="#trouble-10-sandbox-timeout-khi-chạy-code-dài">Sandbox timeout khi chạy code dài</a></li>
+<li><a href="#trouble-11-skill-zip-báo-phải-chứa-skillmd-ở-thư-mục-gốc">Skill ZIP báo "phải chứa SKILL.md ở thư mục gốc"</a></li>
+<li><a href="#trouble-12-gemma-model-400-thinking-level-not-supported">Gemma model: 400 "Thinking level not supported"</a></li>
+<li><a href="#trouble-13-channel-status-đỏ-faileddegraded">Channel status đỏ: failed/degraded</a></li>
+</ol>
+<hr />
+<h2 id="trouble-1-vault-upload-xong-nhưng-search-không-ra">1. Vault: upload xong nhưng search không ra</h2>
+<p><strong>Symptom:</strong> Đã upload file vào Vault. Bấm 🔍 Tìm kiếm → trả 0 kết quả hoặc không tìm thấy file vừa upload.</p>
+<p><strong>Diagnose:</strong><br />
+1. Mở doc trong list Vault → click → tab <strong>Đoạn trích (Chunks)</strong><br />
+2. Nhìn trạng thái mỗi chunk: 🟢 Đã nhúng / 🟡 Chưa nhúng<br />
+3. Nếu thấy 🟡 → enrichment chưa xong / fail</p>
+<p><strong>Hoặc</strong> check qua API:</p>
+<pre><code class="language-bash">ssh &lt;ssh-alias&gt; &quot;curl -s -H 'Authorization: Bearer &lt;gateway-token&gt;' \
+  -H 'X-GoClaw-User-Id: &lt;user-id&gt;' \
+  http://localhost:18790/v1/vault/enrichment/status&quot;
+</code></pre>
+<p>Output <code>{"phase":"running"}</code> = đang xử lý, đợi. Output <code>{"phase":"done","error_count":N}</code> với N&gt;0 = có file lỗi.</p>
+<p><strong>Fix:</strong><br />
+- <strong>Đang running</strong> → đợi vài phút. File lớn (PDF nhiều trang) có thể mất 5-10 phút<br />
+- <strong>Có error_count</strong> → xem <code>last_error</code>. Phổ biến:<br />
+  - File PDF bị mã hóa/password → bỏ password rồi re-upload<br />
+  - File quá lớn → split nhỏ<br />
+  - Encoding lạ → save lại UTF-8<br />
+- <strong>Phase done nhưng vẫn 🟡</strong> → bấm <strong>Re-index</strong> trên doc đó, hoặc header <strong>Quét lại workspace</strong><br />
+- <strong>Embedding provider lỗi</strong> → vào Settings xem provider/model embedding (<code>gemini-embedding-001</code> hoặc <code>text-embedding-3-small</code>...) còn key valid không</p>
+<p><strong>Prevent:</strong><br />
+- Upload từng batch nhỏ (10-20 file) thay vì 100 file một lúc<br />
+- File PDF lớn → giảm số trang, hoặc convert sang markdown trước<br />
+- Định kỳ check enrichment status sau bulk upload</p>
+<hr />
+<h2 id="trouble-2-memory-search-trả-0-kết-quả">2. Memory: search trả 0 kết quả</h2>
+<p><strong>Symptom:</strong> Đã tạo memory document nhưng semantic search không tìm thấy.</p>
+<p><strong>Diagnose:</strong><br />
+1. Memory → tab Tài liệu → tìm doc bạn vừa tạo<br />
+2. Click → tab Chunks → check 🟢 Đã nhúng<br />
+3. Nếu Đã nhúng nhưng search vẫn không ra → vấn đề ở <strong>Min Score threshold</strong></p>
+<p><strong>Fix:</strong><br />
+- <strong>🟡 Chưa nhúng</strong> → bấm <strong>Lập chỉ mục tất cả</strong> ở header<br />
+- <strong>🟢 Đã nhúng nhưng score &lt; threshold:</strong><br />
+  - Vào <strong>Agents → <code>&lt;agent-name&gt;</code> → ⚙️ Nâng cao → Memory</strong><br />
+  - Hạ <strong>Min Score</strong> từ <code>0.35</code> → <code>0.25</code><br />
+  - Hoặc nâng <strong>Max Results</strong> từ <code>6</code> → <code>10</code><br />
+- <strong>Doc dài quá</strong> → chunk có thể không match. Chia doc thành nhiều doc nhỏ (1 doc/chủ đề, ~3000 ký tự)<br />
+- <strong>Test embedding model</strong> → query qua API search xem score có hợp lý không. Score ~0 = embedding model lỗi</p>
+<p><strong>Prevent:</strong><br />
+- Bật "<strong>Tự động lập chỉ mục sau khi tạo</strong>" mỗi lần tạo doc mới<br />
+- Path memory rõ ràng (<code>notes/khach-abc.md</code> thay vì <code>note1.md</code>) — dễ tìm + dễ filter</p>
+<hr />
+<h2 id="trouble-3-skill-upload-báo-missing-dependencies">3. Skill: upload báo Missing Dependencies</h2>
+<p><strong>Symptom:</strong> Upload skill ZIP xong, header trang Skills hiện panel <strong>Missing Dependencies</strong> với danh sách <code>pip:xxx</code>, <code>npm:yyy</code>. Bấm Install → fail.</p>
+<p><strong>Diagnose:</strong><br />
+- Format dep: <code>pip:&lt;package&gt;</code> (Python), <code>npm:&lt;package&gt;</code> (Node), hoặc tên runtime (<code>python</code>, <code>node</code>)<br />
+- Click Install → trạng thái <code>Installing... → Failed</code><br />
+- Nếu <strong>tất cả</strong> dep cùng fail → 99% là container thiếu runtime, không phải lỗi từng package</p>
+<p><strong>Fix:</strong><br />
+- <strong>Container thiếu Python/Node runtime:</strong><br />
+  1. Vào menu <strong>Packages</strong> (nếu có) → cài Python/Node trong container<br />
+  2. Hoặc SSH vào VPS:<br />
+<code>bash
+     docker exec -u 0 &lt;tenant-slug&gt;-goclaw-1 apk add python3 py3-pip   # Alpine
+     # hoặc
+     docker exec -u 0 &lt;tenant-slug&gt;-goclaw-1 apt install -y python3 python3-pip   # Debian</code><br />
+  3. Bấm <strong>Rescan Deps</strong> ở header trang Skills<br />
+- <strong>1 dep cụ thể fail:</strong><br />
+  - <code>pip</code> không có internet → check container network<br />
+  - Package compile cần dev headers → SSH cài <code>build-essential</code> / <code>python3-dev</code><br />
+  - Package version conflict → check log container <code>docker logs &lt;tenant-slug&gt;-goclaw-1</code></p>
+<p><strong>Prevent:</strong><br />
+- Khi viết skill có dep, kiểm tra container target có Python/Node chưa<br />
+- File <code>requirements.txt</code> ghi rõ version (<code>numpy==1.26.0</code> thay vì <code>numpy</code>) → tránh conflict<br />
+- Test skill ở dev env trước khi đưa production</p>
+<hr />
+<h2 id="trouble-4-agent-quên-file-context-vừa-sửa">4. Agent "quên" file context vừa sửa</h2>
+<p><strong>Symptom:</strong> Đã sửa <code>SOUL.md</code> / <code>IDENTITY.md</code> (đổi tính cách, vai trò). Chat lại với agent → vẫn ra phong cách cũ.</p>
+<p><strong>Diagnose:</strong><br />
+- Vào tab Tệp của agent → click <code>SOUL.md</code> → kiểm tra nội dung mới đã lưu chưa<br />
+- Nếu nội dung file đúng nhưng agent vẫn cũ → 99% là <strong>session đang active đã cache system prompt</strong></p>
+<p><strong>Fix:</strong><br />
+- <strong>Tạo session mới:</strong><br />
+  - Web Chat: bấm <strong>+ New Chat</strong> ở góc<br />
+  - Telegram/Zalo/Slack/...: chat từ user khác hoặc xóa session hiện tại<br />
+  - Vào menu <strong>Sessions</strong> → tìm session với agent này + user này → bấm <strong>Reset</strong> hoặc <strong>Xóa</strong><br />
+- Sau đó chat lại từ session mới → phải thấy phong cách mới</p>
+<p><strong>Prevent:</strong><br />
+- Mỗi lần sửa file context: nhớ tạo session mới ngay sau lưu<br />
+- Có thể xài nút <strong>System Prompt Preview</strong> ở tab Tệp để kiểm tra prompt thực tế trước khi tạo session</p>
+<hr />
+<h2 id="trouble-5-bootstrap-trap-agent-kẹt-onboarding-mode">5. Bootstrap trap: agent kẹt onboarding mode</h2>
+<p><strong>Symptom:</strong> Agent chỉ trả lời đúng 1 câu lặp lại "Đây là lần đầu chúng ta nói chuyện, anh/chị cho em hỏi tên/timezone..." và không gọi được tool nào (kể cả <code>vault_search</code>).</p>
+<p><strong>Diagnose:</strong><br />
+- Vào tab Tệp → check 2 thứ:<br />
+  1. Có file <code>BOOTSTRAP.md</code> không?<br />
+  2. File <code>USER.md</code> có nội dung thật hay vẫn là template trống?<br />
+- Nếu <strong>có BOOTSTRAP.md + USER.md trống</strong> → agent rơi vào bootstrap mode (chỉ dùng <code>write_file</code>, không có tool khác)</p>
+<p><strong>Fix:</strong><br />
+1. <strong>Populate <code>USER.md</code></strong> với nội dung thật (vd: "Người dùng tên Nguyễn Văn A, làm việc tại CTI Group, múi giờ Asia/Saigon")<br />
+2. <strong>Xóa <code>BOOTSTRAP.md</code></strong> khỏi tab Tệp (hoặc rename)<br />
+3. <strong>Tạo session mới</strong> (như case 4) — vì session active đã cache system prompt<br />
+4. Chat lại → agent phải có đầy đủ tools</p>
+<p><strong>Hoặc qua DB nếu file không xóa được trên UI:</strong></p>
+<pre><code class="language-bash">ssh &lt;ssh-alias&gt; &quot;docker exec &lt;tenant-slug&gt;-postgres-1 psql -U goclaw -d goclaw \
+  -c \&quot;DELETE FROM user_context_files WHERE file_name='BOOTSTRAP.md' \
+  AND user_id='&lt;user-id&gt;';\&quot;&quot;
+</code></pre>
+<p><strong>Prevent:</strong><br />
+- Khi tạo agent Predefined mới: chủ động populate USER.md cho từng user trước khi user chat lần đầu<br />
+- Hoặc xóa BOOTSTRAP.md ngay nếu không cần onboarding flow</p>
+<hr />
+<h2 id="trouble-6-cron-không-chạy-đúng-giờ">6. Cron không chạy đúng giờ</h2>
+<p><strong>Symptom:</strong> Tạo cron job lúc 9:00 sáng VN. Thực tế chạy lúc 16:00 VN (chênh 7 tiếng).</p>
+<p><strong>Diagnose:</strong><br />
+- Default múi giờ của Goclaw cron = <strong>UTC</strong><br />
+- Vd <code>0 9 * * *</code> (UTC) = 16:00 VN (UTC+7)</p>
+<p><strong>Fix:</strong><br />
+- Vào menu <strong>Cron</strong> → mở job → field <strong>Múi giờ</strong><br />
+- Đổi từ <code>UTC</code> thành <code>Asia/Ho_Chi_Minh</code> (hoặc <code>Asia/Saigon</code>)<br />
+- Save → cron run log từ giờ sẽ đúng giờ VN</p>
+<p><strong>Prevent:</strong><br />
+- ⚠️ <strong>Mọi cron job VN phải set <code>Asia/Ho_Chi_Minh</code> ngay lúc tạo</strong>, không tin default UTC<br />
+- Test bằng nút <strong>Chạy thử</strong> sau khi tạo, không chờ tới giờ thật mới biết</p>
+<hr />
+<h2 id="trouble-7-per-group-skill-filter-không-apply">7. Per-group skill filter không apply</h2>
+<p><strong>Symptom:</strong> Đã set filter trong tab <strong>Nhóm</strong> của channel (chỉ cho group X dùng skill <code>pdf</code>, <code>docx</code>). Member group X vẫn gọi được <code>skill-creator</code>.</p>
+<p><strong>Diagnose:</strong><br />
+- Vào <strong>Channel</strong> → channel đó → tab <strong>Nhóm</strong><br />
+- Tìm dòng group ID đó (<code>-100123456</code> Telegram, hoặc ID Zalo/WhatsApp)<br />
+- Check field <strong>Bộ lọc skill</strong>:<br />
+  - <strong>Trống</strong> = kế thừa từ Skills List của agent (filter không apply)<br />
+  - <strong>Có tick</strong> = chỉ skill được tick mới gọi được</p>
+<p><strong>Fix:</strong><br />
+- Click vào group đó → field <strong>Bộ lọc skill</strong> → tick các skill cho phép<br />
+- Nhớ <strong>KHÔNG</strong> tick skill muốn cấm (vd <code>skill-creator</code>)<br />
+- Save</p>
+<p><strong>Prevent:</strong><br />
+- Set filter ngay khi gắn agent vào group production, không để default<br />
+- Wildcard <code>*</code> cho group ID → áp dụng cho mọi group (nếu muốn rule chung)</p>
+<hr />
+<h2 id="trouble-8-api-trả-401-mặc-dù-có-token">8. API trả 401 mặc dù có token</h2>
+<p><strong>Symptom:</strong> Curl API có header <code>Authorization: Bearer &lt;token&gt;</code> đúng nhưng vẫn trả <code>{"error":{"code":"INVALID_REQUEST","message":"X-GoClaw-User-Id header is required"}}</code> hoặc 401.</p>
+<p><strong>Diagnose:</strong><br />
+- Xem chính xác message error:<br />
+  - <code>"X-GoClaw-User-Id header is required"</code> → thiếu header user<br />
+  - <code>"unauthorized"</code> → token sai/hết hạn<br />
+  - <code>"tenant not found"</code> → header tenant ID sai</p>
+<p><strong>Fix:</strong><br />
+- <strong>Thiếu <code>X-GoClaw-User-Id</code>:</strong><br />
+<code>bash
+  curl ... -H "X-GoClaw-User-Id: &lt;user-id&gt;" ...</code><br />
+- <strong>Token sai:</strong><br />
+  - Lấy token mới từ <code>.env</code> trên VPS:<br />
+<code>bash
+    ssh &lt;ssh-alias&gt; "grep GOCLAW_GATEWAY_TOKEN /opt/goclaw/&lt;tenant-slug&gt;/.env"</code><br />
+  - Token có thể đã rotate — kiểm tra lại<br />
+- <strong>Tenant ID sai:</strong><br />
+  - Master tenant không cần <code>X-GoClaw-Tenant-Id</code><br />
+  - Tenant khác → set đúng UUID</p>
+<p><strong>Prevent:</strong><br />
+- Lưu template curl đầy đủ header trong <code>CLAUDE.md</code> để không quên<br />
+- Test connection lúc setup ban đầu (xem <a href="#claude-bước-4-test-connection">02 §Bước 4</a>)</p>
+<hr />
+<h2 id="trouble-9-agent-vượt-budget-bị-chặn-api">9. Agent vượt budget, bị chặn API</h2>
+<p><strong>Symptom:</strong> Agent đột ngột không trả lời hoặc trả error. Dashboard hiện banner "Agent exceeded monthly budget".</p>
+<p><strong>Diagnose:</strong><br />
+- Vào <strong>Agents → <code>&lt;agent-name&gt;</code> → Mô hình &amp; Ngân sách</strong><br />
+- Xem <strong>Budget Monthly</strong> vs <strong>Usage tháng hiện tại</strong></p>
+<p><strong>Fix:</strong><br />
+- <strong>Tăng Budget Monthly</strong> (nếu thật sự cần) — vd 50 → 100 USD<br />
+- <strong>Hoặc đợi đầu tháng sau</strong> — counter reset tự động<br />
+- <strong>Hoặc đổi model rẻ hơn</strong>:<br />
+  - Claude Sonnet → Haiku (1/10 giá)<br />
+  - GPT-4o → GPT-4o-mini<br />
+  - Gemini Pro → Gemini Flash</p>
+<p><strong>Prevent:</strong><br />
+- ⚠️ <strong>Đặt budget HỢP LÝ ngay từ đầu</strong>: Sonnet 20-50, Opus/reasoning 100-300, Haiku/Flash 5-15<br />
+- Bật <strong>Heartbeat MODEL Override</strong> dùng model rẻ hơn cho heartbeat<br />
+- Bật <strong>Subagents Model Override</strong> dùng Haiku cho subagent (1/10 giá)<br />
+- Theo dõi Usage tuần đầu → điều chỉnh budget cho tháng sau</p>
+<hr />
+<h2 id="trouble-10-sandbox-timeout-khi-chạy-code-dài">10. Sandbox timeout khi chạy code dài</h2>
+<p><strong>Symptom:</strong> Agent chạy script Python (qua skill hoặc tool <code>exec</code>) → bị cắt giữa chừng, báo "Sandbox timeout".</p>
+<p><strong>Diagnose:</strong><br />
+- Vào <strong>Agents → <code>&lt;agent-name&gt;</code> → ⚙️ Nâng cao → Sandbox</strong><br />
+- Xem <strong>Timeout</strong> (default 300 giây = 5 phút)</p>
+<p><strong>Fix:</strong><br />
+- <strong>Tăng Timeout</strong> lên 600/900 giây (10/15 phút) cho task nặng<br />
+- <strong>Tăng Memory</strong> từ 512MB → 1024MB (1GB) nếu script dùng nhiều RAM<br />
+- <strong>Tăng CPUs</strong> từ 1.0 → 2.0 nếu cần parallel<br />
+- <strong>Bật Network Enabled</strong> nếu script cần <code>pip install</code> / fetch internet (default tắt)</p>
+<p><strong>Prevent:</strong><br />
+- Script dài → chia thành nhiều bước nhỏ trong skill (mỗi bước &lt;5 phút)<br />
+- Cache kết quả intermediate vào file để không phải tính lại<br />
+- Production: <strong>Mode <code>non-main</code></strong> (chỉ sandbox cho non-main session) — tốc độ nhanh hơn</p>
+<hr />
+<h2 id="trouble-11-skill-zip-báo-phải-chứa-skillmd-ở-thư-mục-gốc">11. Skill ZIP báo "phải chứa SKILL.md ở thư mục gốc"</h2>
+<p><strong>Symptom:</strong> Upload skill ZIP qua tab Custom → báo error <em>"ZIP phải chứa SKILL.md ở thư mục gốc"</em>.</p>
+<p><strong>Diagnose:</strong><br />
+- Mở file ZIP bằng tool zip viewer<br />
+- Nếu thấy có <strong>folder bọc</strong> bên ngoài (vd <code>my-skill/SKILL.md</code>) → đây là lỗi<br />
+- Nếu thấy <code>SKILL.md</code> ngay root level → vấn đề khác (có thể spelling: <code>Skill.md</code> ≠ <code>SKILL.md</code>, case-sensitive)</p>
+<p><strong>Fix:</strong><br />
+- <strong>Zip lại đúng cách trên Windows:</strong><br />
+  1. Mở folder skill (vào TRONG folder)<br />
+  2. <code>Ctrl + A</code> chọn tất cả file/folder bên trong<br />
+  3. Chuột phải → <strong>Compress to ZIP</strong><br />
+  4. <strong>KHÔNG</strong> click chuột phải lên folder skill rồi compress<br />
+- <strong>Trên Mac/Linux:</strong><br />
+<code>bash
+  cd ten-skill
+  zip -r ../ten-skill.zip .</code><br />
+- <strong>Tên file phải chính xác</strong> <code>SKILL.md</code> (uppercase). Không phải <code>Skill.md</code>, <code>skill.md</code></p>
+<p><strong>Prevent:</strong><br />
+- Test mở ZIP trước khi upload — file đầu phải là <code>SKILL.md</code> (không có folder trước)<br />
+- Dùng script <code>package_skill.py</code> từ <code>skill-creator</code> để package đúng chuẩn</p>
+<hr />
+<h2 id="trouble-12-gemma-model-400-thinking-level-not-supported">12. Gemma model: 400 "Thinking level not supported"</h2>
+<p><strong>Symptom:</strong> Agent dùng provider Gemini với model Gemma (vd <code>gemma-4-31b-it</code>). Gọi chat → API trả 400 <em>"Thinking level is not supported for this model"</em>.</p>
+<p><strong>Diagnose:</strong><br />
+- Vào <strong>Agents → <code>&lt;agent-name&gt;</code> → ⚙️ Nâng cao → Thinking / Reasoning</strong><br />
+- Xem <strong>Thinking Level</strong> — nếu khác <code>''</code> (rỗng) thì là nguyên nhân</p>
+<p><strong>Fix:</strong><br />
+- Set <strong>Thinking Level</strong> = <code>''</code> (rỗng, không phải <code>off</code>)<br />
+- Hoặc set <strong>Reasoning Mode</strong> = <code>inherit</code> và đảm bảo system default không bật thinking<br />
+- Save → test chat lại</p>
+<p><strong>Prevent:</strong><br />
+- Khi chọn model Gemma: KIỂM TRA <code>thinking_level</code> rỗng ngay lúc tạo agent<br />
+- Document: chỉ Gemini Flash/Pro và Claude support thinking_level. Gemma KHÔNG</p>
+<hr />
+<h2 id="trouble-13-channel-status-đỏ-faileddegraded">13. Channel status đỏ: failed/degraded</h2>
+<p><strong>Symptom:</strong> Trong menu <strong>Channel</strong>, channel của agent có status 🔴 <code>failed</code> hoặc 🟡 <code>degraded</code>.</p>
+<p><strong>Diagnose:</strong><br />
+- Click channel → mở chi tiết → tab chính có khối <strong>Dòng thời gian (Diagnostics)</strong>:<br />
+  - Lỗi đầu tiên + Kiểm tra gần nhất + N lần liên tiếp<br />
+  - <strong>Điều gì đã xảy ra</strong>: mô tả lỗi<br />
+  - <strong>Hành động được khuyến nghị</strong>: bước tiếp theo<br />
+- Nhãn loại lỗi: <strong>Xác thực</strong> (cred sai) / <strong>Cấu hình</strong> (config sai) / <strong>Mạng</strong> / <strong>Cần chú ý</strong></p>
+<p><strong>Fix theo loại lỗi:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Loại</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Xác thực</strong> (token sai/hết hạn)</td>
+<td>Tab <strong>Thông tin xác thực</strong> → nhập lại token mới (Telegram BotFather, Slack OAuth, ...) → Save</td>
+</tr>
+<tr>
+<td><strong>Cấu hình</strong></td>
+<td>Tab <strong>Cấu hình</strong> → check field theo loại channel (Discord cần Message Content Intent, Slack cần Socket Mode, FB cần page_id, ...)</td>
+</tr>
+<tr>
+<td><strong>Mạng</strong></td>
+<td>SSH vào VPS → ping endpoint channel (api.telegram.org, slack.com) → check firewall</td>
+</tr>
+<tr>
+<td><strong>Cần chú ý</strong></td>
+<td>Đọc kỹ "Hành động được khuyến nghị" — thường là rotate token, kiểm tra webhook secret</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Banner "Cần xác thực"</strong> → bấm <strong>Kết nối lại phiên channel</strong></li>
+<li><strong>Banner "Thiếu thông tin xác thực"</strong> → bấm <strong>Điền thông tin xác thực bắt buộc</strong></li>
+</ul>
+<p><strong>Prevent:</strong><br />
+- <strong>Rotate token 90 ngày/lần</strong> (đặt nhắc lịch)<br />
+- Tách bot <strong>dev/prod</strong> (token khác nhau)<br />
+- Set <code>webhook_secret</code> cho channel webhook-based (FB/Pancake/Zalo OA)<br />
+- Theo dõi <strong>Failure Streak</strong> mỗi tuần → &gt;5 = rotate token</p>
+<hr />
+<h2 id="trouble-khi-nào-cần-liên-hệ-support">Khi nào cần liên hệ support?</h2>
+<p>Nếu đã thử fix theo file này nhưng vẫn không xử được, gom thông tin sau gửi support:</p>
+<ol>
+<li><strong>Symptom mô tả</strong> (1-2 câu, kèm screenshot nếu có)</li>
+<li><strong>Trang/menu</strong> đang gặp lỗi</li>
+<li><strong>Output API/log lỗi</strong> (copy nguyên text):<br />
+<code>bash
+   ssh &lt;ssh-alias&gt; "docker logs &lt;tenant-slug&gt;-goclaw-1 --tail 200"</code></li>
+<li><strong>Đã thử fix gì rồi</strong> (theo file này)</li>
+<li><strong>Thời điểm bắt đầu lỗi</strong> (ước chừng)</li>
+</ol>
+<p>Đào sâu hơn → <a href="#glossary">05 — Glossary</a> cho thuật ngữ.</p></section>
+<section id="glossary" class="doc-section"><h1 id="glossary-05-thuật-ngữ-so-sánh-nhanh">05 — Thuật ngữ &amp; So sánh nhanh</h1>
+<blockquote>
+<p><strong>Khi nào dùng file này:</strong> mở khi đọc các file khác mà không hiểu thuật ngữ, hoặc đang bối rối không biết "đút kiến thức cho agent" thì dùng cách nào.</p>
+</blockquote>
+<hr />
+<h2 id="glossary-1-năm-cách-đút-kiến-thức-cho-agent-bảng-so-sánh">1. Năm cách "đút kiến thức" cho Agent — bảng so sánh</h2>
+<p>GoClaw có <strong>5 nơi</strong> chứa kiến thức cho agent. Chọn đúng nơi quan trọng hơn cách làm.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Vault</strong></th>
+<th><strong>Memory</strong></th>
+<th><strong>Knowledge Graph</strong></th>
+<th><strong>File context</strong></th>
+<th><strong>Skill</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Là gì</strong></td>
+<td>Kho tài liệu chia sẻ</td>
+<td>Bộ nhớ dài hạn riêng agent</td>
+<td>Bản đồ thực thể + quan hệ</td>
+<td>File "tính cách" của agent</td>
+<td>Hướng dẫn cách làm 1 việc cụ thể</td>
+</tr>
+<tr>
+<td><strong>Phạm vi</strong></td>
+<td>Cá nhân / Nhóm / Chia sẻ workspace</td>
+<td>Toàn cục / Cá nhân (riêng 1 agent)</td>
+<td>Riêng 1 agent</td>
+<td>Riêng 1 agent</td>
+<td>Toàn cục (có thể override theo tenant)</td>
+</tr>
+<tr>
+<td><strong>Format</strong></td>
+<td>7 doctype: context/memory/note/skill/episodic/media/document</td>
+<td>Markdown chia chunk ~1000 ký tự</td>
+<td>Entity (người/công ty/sản phẩm) + Relation (works_at, owns...)</td>
+<td><code>SOUL.md</code>, <code>IDENTITY.md</code>, <code>USER.md</code>, <code>HEARTBEAT.md</code></td>
+<td><code>SKILL.md</code> + scripts/references</td>
+</tr>
+<tr>
+<td><strong>Cách tìm</strong></td>
+<td>Hybrid: full-text + semantic</td>
+<td>Semantic (hiểu ý, không cần keyword)</td>
+<td>Graph traversal (đi theo quan hệ)</td>
+<td>Inject vào system prompt</td>
+<td>Agent gọi <code>skill_search</code></td>
+</tr>
+<tr>
+<td><strong>Có wikilinks?</strong></td>
+<td>✅ <code>[[link]]</code> giữa doc</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Khi nào dùng</strong></td>
+<td>Báo cáo, FAQ, brand voice, hợp đồng mẫu, policies</td>
+<td>Note ngắn, fact riêng, sở thích user</td>
+<td>Câu hỏi quan hệ ("khách nào mua X và làm ở Y?")</td>
+<td>Đổi tính cách, vai trò, ngôn ngữ agent</td>
+<td>Cấp năng lực mới (làm Excel, parse PDF, gọi API)</td>
+</tr>
+<tr>
+<td><strong>Hướng dẫn</strong></td>
+<td><a href="#dashboard">01 §A</a> / <a href="#claude">02</a></td>
+<td><a href="#dashboard">01 §B</a></td>
+<td><a href="#dashboard">01 §C</a></td>
+<td><a href="#dashboard">01 §D</a></td>
+<td><a href="#skill">03</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="glossary-quy-tắc-chọn-nhanh">Quy tắc chọn nhanh</h3>
+<ul>
+<li>Có <strong>file PDF/Word</strong> muốn agent đọc được → <strong>Vault</strong></li>
+<li>Có <strong>fact ngắn</strong> muốn agent nhớ qua nhiều cuộc chat → <strong>Memory</strong></li>
+<li>Có nhiều <strong>người + công ty + sản phẩm</strong> liên quan đến nhau → <strong>Knowledge Graph</strong></li>
+<li>Muốn đổi <strong>cách agent xưng hô / phong cách trả lời</strong> → <strong>File context (SOUL.md)</strong></li>
+<li>Muốn agent <strong>biết làm 1 thao tác mới</strong> (gọi API, sinh file Excel) → <strong>Skill</strong></li>
+</ul>
+<hr />
+<h2 id="glossary-2-memory-vs-vault-vs-file-context-phân-biệt-3-thứ-hay-nhầm">2. Memory vs Vault vs File context — phân biệt 3 thứ hay nhầm</h2>
+<table>
+<thead>
+<tr>
+<th>Câu hỏi</th>
+<th>Memory</th>
+<th>Vault</th>
+<th>File context</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ai dùng được?</td>
+<td>Riêng 1 agent</td>
+<td>Cả workspace / nhóm / cá nhân</td>
+<td>Riêng 1 agent</td>
+</tr>
+<tr>
+<td>Có wikilinks không?</td>
+<td>❌</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Có 7 doctype không?</td>
+<td>❌ (chỉ markdown chunks)</td>
+<td>✅</td>
+<td>❌ (4 file cố định)</td>
+</tr>
+<tr>
+<td>Có quét workspace folder không?</td>
+<td>❌</td>
+<td>✅ (sync auto)</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Inject thẳng vào prompt?</td>
+<td>❌ (chỉ search khi cần)</td>
+<td>❌ (chỉ search khi cần)</td>
+<td>✅ (luôn ở đầu prompt)</td>
+</tr>
+<tr>
+<td>Sửa xong cần tạo session mới?</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅ (vì system prompt đã cache)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Mẹo nhớ:</strong><br />
+- <strong>Vault</strong> = thư viện chung (như Google Drive cho team)<br />
+- <strong>Memory</strong> = ghi chú cá nhân của agent (như sticky note trong não)<br />
+- <strong>File context</strong> = "ADN" của agent (đổi là đổi tính cách)</p>
+<hr />
+<h2 id="glossary-3-thuật-ngữ-agent">3. Thuật ngữ Agent</h2>
+<table>
+<thead>
+<tr>
+<th>Thuật ngữ</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Open Agent</strong></td>
+<td>Mỗi user có 1 bản agent riêng — history/context không share. Phù hợp trợ lý cá nhân. <strong>Không vào được Team.</strong></td>
+</tr>
+<tr>
+<td><strong>Predefined Agent</strong></td>
+<td>Dùng chung — ngữ cảnh nền chung, vẫn giữ <code>USER.md</code> per-user. Bắt buộc nếu muốn vào Team.</td>
+</tr>
+<tr>
+<td><strong>Agent Key</strong></td>
+<td>Slug định danh (vd <code>&lt;agent-key&gt;</code>). <strong>Không đổi được sau khi tạo.</strong></td>
+</tr>
+<tr>
+<td><strong>System Prompt</strong></td>
+<td>Đoạn hướng dẫn nền của agent. Có 4 mode: Đầy đủ (~4.8K token) / Tác vụ (~1.3K) / Tối giản (~570) / Không (~640)</td>
+</tr>
+<tr>
+<td><strong>Persona</strong></td>
+<td>Tóm tắt chuyên môn 2-3 câu (ngôi 1) — text này LLM thực sự đọc</td>
+</tr>
+<tr>
+<td><strong>Heartbeat</strong></td>
+<td>Agent chủ động chạy định kỳ (5 min mặc định), có thể gửi tin chủ động qua channel</td>
+</tr>
+<tr>
+<td><strong>Self-Evolution</strong></td>
+<td>Agent tự rút kinh nghiệm và điều chỉnh (chỉ Predefined). <strong>Production khuyên TẮT cho đến khi quan sát ≥2 tuần.</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="glossary-4-thuật-ngữ-skill">4. Thuật ngữ Skill</h2>
+<table>
+<thead>
+<tr>
+<th>Thuật ngữ</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pinned Skill</strong></td>
+<td>Skill nhúng thẳng vào system prompt (tối đa <strong>10</strong>). Agent không cần <code>skill_search</code> để tìm — thấy ngay nhưng tốn vài trăm token/skill</td>
+</tr>
+<tr>
+<td><strong>Visibility</strong></td>
+<td>3 mức: <code>Riêng tư</code> (chỉ owner) / <code>Nội bộ</code> (default an toàn — agent được cấp quyền) / <code>Công khai</code></td>
+</tr>
+<tr>
+<td><strong>Tenant Override</strong></td>
+<td>Bật/tắt skill khác toàn cục cho riêng 1 tenant. Vd toàn cục bật, tenant ngân hàng tắt</td>
+</tr>
+<tr>
+<td><strong>System Skill</strong></td>
+<td>5 skill có sẵn: <code>pdf</code>, <code>docx</code>, <code>xlsx</code>, <code>pptx</code>, <code>skill-creator</code>. Không xóa/sửa được</td>
+</tr>
+<tr>
+<td><strong>Custom Skill</strong></td>
+<td>Skill upload qua ZIP. Có thể edit metadata (mô tả/visibility/tags), version (v1 → v2), delete</td>
+</tr>
+<tr>
+<td><strong><code>skill-creator</code></strong></td>
+<td>System skill đặc biệt: dạy agent <strong>tự tạo skill mới</strong> qua chat, eval-driven. Workflow 10 bước. Có tool <code>publish_skill</code> tự đăng ký skill vào hệ thống</td>
+</tr>
+</tbody>
+</table>
+<h2 id="glossary-5-thuật-ngữ-channel">5. Thuật ngữ Channel</h2>
+<table>
+<thead>
+<tr>
+<th>Thuật ngữ</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Channel Instance</strong></td>
+<td>1 cấu hình = slug + loại + credentials + agent gán + status. Có thể tạo nhiều instance cùng loại (vd 3 bot Telegram cho 3 thị trường)</td>
+</tr>
+<tr>
+<td><strong>DM Policy</strong></td>
+<td>Quy tắc chat riêng: <code>pairing</code> (nhập OTP) / <code>allowlist</code> / <code>open</code> / <code>disabled</code></td>
+</tr>
+<tr>
+<td><strong>Group Policy</strong></td>
+<td>Quy tắc trong group: cùng 4 mức như DM Policy</td>
+</tr>
+<tr>
+<td><strong>Allow_from</strong></td>
+<td>Danh sách user ID được phép tương tác</td>
+</tr>
+<tr>
+<td><strong>Per-group skill filter</strong></td>
+<td>Mỗi group có thể chỉ định danh sách skill cho phép (tab Nhóm trong channel detail)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="glossary-6-thuật-ngữ-session-sandbox">6. Thuật ngữ Session &amp; Sandbox</h2>
+<table>
+<thead>
+<tr>
+<th>Thuật ngữ</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Session</strong></td>
+<td>1 cuộc hội thoại (user × agent × channel). Tách biệt ký ức — không nhớ chéo</td>
+</tr>
+<tr>
+<td><strong>Reset session</strong></td>
+<td>Xóa message, giữ key. User chuyển chủ đề mà không mất pairing</td>
+</tr>
+<tr>
+<td><strong>Xóa session</strong></td>
+<td>Xóa vĩnh viễn. Buộc pair lại kênh nếu DM/Group policy = <code>pairing</code></td>
+</tr>
+<tr>
+<td><strong>Sandbox</strong></td>
+<td>Docker container cô lập để agent chạy code (Python/Bash) an toàn. Mode: <code>off</code> / <code>non-main</code> / <code>all</code></td>
+</tr>
+<tr>
+<td><strong>Workspace</strong></td>
+<td>Folder file riêng của agent (vd <code>/app/workspace/&lt;agent-key&gt;</code>), gán tự động khi tạo agent</td>
+</tr>
+</tbody>
+</table>
+<h2 id="glossary-7-thuật-ngữ-liên-quan-api">7. Thuật ngữ liên quan API</h2>
+<table>
+<thead>
+<tr>
+<th>Thuật ngữ</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gateway Token</strong></td>
+<td><code>&lt;gateway-token&gt;</code> — Bearer token để gọi API. Lấy từ <code>.env</code> server (<code>GOCLAW_GATEWAY_TOKEN</code>)</td>
+</tr>
+<tr>
+<td><strong>Master Tenant</strong></td>
+<td>Tenant mặc định của hệ thống. ID cố định: <code>0193a5b0-7000-7000-8000-000000000001</code>. Không cần header <code>X-GoClaw-Tenant-Id</code></td>
+</tr>
+<tr>
+<td><strong><code>X-GoClaw-User-Id</code></strong></td>
+<td>Header bắt buộc cho hầu hết API endpoint. Định danh user gọi API</td>
+</tr>
+<tr>
+<td><strong>Bootstrap mode</strong></td>
+<td>Agent rơi vào trạng thái onboarding (chỉ dùng <code>write_file</code>) khi user có <code>BOOTSTRAP.md</code> + <code>USER.md</code> trống. Cần xóa <code>BOOTSTRAP.md</code> + populate <code>USER.md</code> + tạo session mới</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="glossary-đào-sâu">Đào sâu</h2>
+<ul>
+<li><strong>Sách hướng dẫn quản trị 11 menu GoClaw</strong> — file HTML cẩm nang đi kèm bộ cài đặt sản phẩm</li>
+<li><strong>Dashboard:</strong> mỗi menu có nút <code>?</code> (hoặc tooltip) giải thích từng trường khi hover</li>
+</ul></section>
+<section id="read-claude" class="doc-section"><h1 id="read-claude-06-đọc-tài-liệu-này-bằng-claude">06 — Đọc tài liệu này bằng Claude</h1>
+<blockquote>
+<p>Thay vì scroll đọc 6 file MD lần lượt, bạn có thể "<strong>trò chuyện</strong>" với bộ tài liệu — hỏi Claude câu cụ thể, Claude tự đọc đúng file/đoạn liên quan trả lời.</p>
+</blockquote>
+<p>Có 4 cách dùng. Chọn cách phù hợp tùy bạn đang dùng tool nào.</p>
+<hr />
+<h2 id="read-claude-cách-1-claude-code-recommended-cho-người-đã-quen-cli">Cách 1 — Claude Code (recommended cho người đã quen CLI)</h2>
+<p><strong>Khi nào dùng:</strong> đã có Claude Code trên máy, hay vừa code vừa hỏi GoClaw.</p>
+<h3 id="read-claude-setup-5-phút-1-lần-duy-nhất">Setup (5 phút, 1 lần duy nhất)</h3>
+<ol>
+<li>
+<p><strong>Tải bộ tài liệu</strong> về 1 folder local, vd:<br />
+<code>~/goclaw-docs/
+   ├── README.md
+   ├── 00-quickstart.md
+   ├── 01-train-agent-dashboard.md
+   ├── 02-train-agent-via-claude.md
+   ├── 03-create-skill.md
+   ├── 04-troubleshooting.md
+   ├── 05-glossary.md
+   └── 06-read-with-claude.md</code></p>
+</li>
+<li>
+<p><strong>Mở Claude Code</strong> trong folder đó:<br />
+<code>bash
+   cd ~/goclaw-docs
+   claude</code></p>
+</li>
+<li>
+<p><strong>Tạo file <code>CLAUDE.md</code></strong> trong folder (Claude Code tự đọc file này mỗi session):<br />
+   ```markdown<br />
+   # GoClaw Train Guide</p>
+</li>
+</ol>
+<p>Folder này chứa hướng dẫn chi tiết cách train agent GoClaw qua dashboard<br />
+   và qua Claude Code. Khi user hỏi về:<br />
+   - Cách đút tài liệu/PDF/note → đọc 01-train-agent-dashboard.md<br />
+   - Cách dùng API/CLI → đọc 02-train-agent-via-claude.md<br />
+   - Tạo skill mới → đọc 03-create-skill.md<br />
+   - Lỗi gặp phải → đọc 04-troubleshooting.md<br />
+   - Thuật ngữ không rõ → đọc 05-glossary.md</p>
+<p>Trả lời ngắn gọn, chỉ trích đoạn liên quan, kèm link file:line nếu có.<br />
+   ```</p>
+<h3 id="read-claude-sử-dụng">Sử dụng</h3>
+<p>Hỏi Claude trực tiếp:</p>
+<pre><code>Cho tôi biết cách upload PDF vào Vault thế nào?
+</code></pre>
+<p>Claude sẽ đọc <code>01-train-agent-dashboard.md</code> rồi trả lời 3 bước + link doc.</p>
+<pre><code>Skill ZIP của tôi báo lỗi &quot;phải chứa SKILL.md ở thư mục gốc&quot;. Fix sao?
+</code></pre>
+<p>Claude sẽ đọc <code>04-troubleshooting.md</code> case 11, trả lời cách zip đúng.</p>
+<pre><code>Tóm tắt 5 cách &quot;đút kiến thức&quot; cho agent
+</code></pre>
+<p>Claude sẽ đọc <code>05-glossary.md</code> + <code>01-train-agent-dashboard.md</code>, tóm tắt bảng so sánh.</p>
+<hr />
+<h2 id="read-claude-cách-2-claude-desktop-với-filesystem-mcp">Cách 2 — Claude Desktop với Filesystem MCP</h2>
+<p><strong>Khi nào dùng:</strong> dùng Claude Desktop (app), thích chat với UI thay vì CLI.</p>
+<h3 id="read-claude-setup">Setup</h3>
+<ol>
+<li><strong>Cài Claude Desktop</strong> từ <a href="https://claude.com/download">claude.com/download</a></li>
+<li><strong>Setup Filesystem MCP Server</strong> — config Claude Desktop trỏ đến folder bộ tài liệu:<br />
+   - Mở Claude Desktop → Settings → Developer → Edit Config<br />
+   - Thêm MCP server filesystem:<br />
+<code>json
+     {
+       "mcpServers": {
+         "goclaw-docs": {
+           "command": "npx",
+           "args": [
+             "-y",
+             "@modelcontextprotocol/server-filesystem",
+             "/path/to/goclaw-docs"
+           ]
+         }
+       }
+     }</code><br />
+   - Restart Claude Desktop</li>
+<li>Trong chat, Claude tự thấy folder → đọc + trả lời được</li>
+</ol>
+<h3 id="read-claude-sử-dụng_1">Sử dụng</h3>
+<p>Y hệt Cách 1 — chỉ khác là thao tác qua app GUI thay vì CLI.</p>
+<hr />
+<h2 id="read-claude-cách-3-claudeai-web-không-cần-cài-gì">Cách 3 — Claude.ai (web, không cần cài gì)</h2>
+<p><strong>Khi nào dùng:</strong> không muốn cài tool gì, muốn chat browser thuần.</p>
+<h3 id="read-claude-setup-3-phút">Setup (3 phút)</h3>
+<ol>
+<li>Mở <a href="https://claude.ai">claude.ai</a>, đăng nhập</li>
+<li>Sidebar → <strong>Projects</strong> → <strong>+ New Project</strong></li>
+<li>Đặt tên: "GoClaw Train Guide"</li>
+<li>Trong Project, tab <strong>Knowledge</strong> → drag-drop <strong>7 file <code>.md</code></strong> vào (giới hạn vài chục MB, đủ chỗ)</li>
+<li>Tab <strong>Custom Instructions</strong> (tùy chọn) — paste:<br />
+<code>Bạn là trợ lý GoClaw. Folder Knowledge chứa hướng dẫn chi tiết
+   train agent. Trả lời câu hỏi của user dựa trên tài liệu này, kèm
+   tên file đã tham khảo. Trả lời tiếng Việt, ngắn gọn.</code></li>
+</ol>
+<h3 id="read-claude-sử-dụng_2">Sử dụng</h3>
+<p>Mở chat trong Project → hỏi trực tiếp:</p>
+<pre><code>Bộ lọc skill per-group hoạt động thế nào?
+</code></pre>
+<p>Claude.ai tự search Knowledge, trả lời + cite file <code>03-create-skill.md</code>.</p>
+<p><strong>Ưu điểm Cách 3:</strong><br />
+- Zero install<br />
+- Có thể share Project với đồng nghiệp (cùng truy cập)<br />
+- Lịch sử chat lưu trên cloud</p>
+<p><strong>Nhược điểm:</strong><br />
+- Cần Claude Pro để có Projects (free tier giới hạn)<br />
+- Phải upload lại file mỗi khi tài liệu update</p>
+<hr />
+<h2 id="read-claude-cách-4-đút-thẳng-vào-vault-của-agent-meta">Cách 4 — Đút thẳng vào Vault của agent (meta!)</h2>
+<p><strong>Khi nào dùng:</strong> đã có agent GoClaw chạy rồi, muốn agent <strong>tự</strong> trả lời câu hỏi về cách dùng GoClaw.</p>
+<h3 id="read-claude-setup-10-phút">Setup (10 phút)</h3>
+<ol>
+<li>Vào dashboard → menu <strong>Vault</strong> → bấm <strong>Tải lên Kho Tri Thức</strong></li>
+<li><strong>Đích đến:</strong> chọn <code>Chia sẻ</code> (toàn workspace) hoặc <code>Agent</code> (riêng 1 agent)</li>
+<li><strong>Loại:</strong> chọn <code>Ngữ cảnh</code> (background tài liệu nền)</li>
+<li>Drop <strong>7 file <code>.md</code></strong> → bấm Tải lên</li>
+<li>Đợi enrichment (vài phút)</li>
+</ol>
+<h3 id="read-claude-sử-dụng_3">Sử dụng</h3>
+<p>Chat với agent (vd qua Telegram/Web Chat):</p>
+<pre><code>User: Em ơi cho anh hỏi cách upload skill ZIP đúng cách
+Agent: [tự gọi vault_search] Dạ anh, theo tài liệu, ZIP phải có
+       SKILL.md ở thư mục gốc, KHÔNG bọc folder. Cách zip đúng trên
+       Windows: vào trong folder → Ctrl+A → chuột phải → Compress...
+</code></pre>
+<p><strong>Ưu điểm Cách 4 (best of both):</strong><br />
+- Vừa <strong>demo</strong> Vault hoạt động thế nào<br />
+- Vừa <strong>làm tài liệu sống</strong> — cập nhật MD trong Vault là agent biết ngay<br />
+- Khách hỏi câu mới, agent trả ngay (không cần ai trực)</p>
+<p><strong>Nhược điểm:</strong><br />
+- Cần agent đã setup xong (provider/model/tools đầy đủ)<br />
+- Câu trả lời phụ thuộc chất lượng model — Gemma 31B có thể trả thiếu, Sonnet/Pro chính xác hơn</p>
+<hr />
+<h2 id="read-claude-so-sánh-4-cách">So sánh 4 cách</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Claude Code</th>
+<th>Claude Desktop</th>
+<th>Claude.ai</th>
+<th>Vault agent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cài đặt</td>
+<td>Cần CLI</td>
+<td>Cần app</td>
+<td>Không cần</td>
+<td>Cần agent</td>
+</tr>
+<tr>
+<td>Trả phí</td>
+<td>Free tier OK</td>
+<td>Free tier OK</td>
+<td>Pro để có Projects</td>
+<td>Tùy provider model</td>
+</tr>
+<tr>
+<td>Update tài liệu</td>
+<td>Sửa MD local</td>
+<td>Sửa MD local</td>
+<td>Re-upload</td>
+<td>Sửa file trong Vault</td>
+</tr>
+<tr>
+<td>Chia sẻ team</td>
+<td>Phải gửi folder</td>
+<td>Phải gửi folder</td>
+<td>Share Project link</td>
+<td>Mọi user của agent</td>
+</tr>
+<tr>
+<td>Trả lời tốt nhất</td>
+<td>Sonnet 4 default</td>
+<td>Sonnet 4 default</td>
+<td>Sonnet 4 default</td>
+<td>Tùy model agent</td>
+</tr>
+<tr>
+<td>Use case</td>
+<td>Dev, ops</td>
+<td>Manager non-CLI</td>
+<td>Đọc nhanh, share team</td>
+<td>Demo Vault + automation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Khuyến nghị:</strong><br />
+- Bạn (admin) → <strong>Cách 1 hoặc 2</strong> để tra cứu hằng ngày<br />
+- Team của bạn → <strong>Cách 3</strong> (share Project)<br />
+- Khách hàng cuối / member group → <strong>Cách 4</strong> (hỏi agent trực tiếp)</p>
+<hr />
+<h2 id="read-claude-prompt-mẫu-hiệu-quả">Prompt mẫu hiệu quả</h2>
+<p>Khi dùng bất kỳ cách nào, các prompt sau cho kết quả tốt:</p>
+<h3 id="read-claude-tra-cứu-nhanh">Tra cứu nhanh</h3>
+<pre><code>Tóm tắt cách &lt;X&gt; trong tài liệu, dưới 100 từ
+</code></pre>
+<h3 id="read-claude-khi-gặp-lỗi">Khi gặp lỗi</h3>
+<pre><code>Tôi đang gặp lỗi: &quot;&lt;paste error message&gt;&quot;.
+Tài liệu có hướng dẫn fix không? Trích đoạn liên quan + cite file.
+</code></pre>
+<h3 id="read-claude-so-sánh">So sánh</h3>
+<pre><code>Memory với Vault khác nhau ở chỗ nào? Khi nào dùng cái nào?
+</code></pre>
+<h3 id="read-claude-step-by-step">Step-by-step</h3>
+<pre><code>Hướng dẫn từng bước cách &lt;X&gt;, từ login dashboard đến verify xong.
+</code></pre>
+<h3 id="read-claude-decision-support">Decision support</h3>
+<pre><code>Tôi muốn agent &lt;làm gì cụ thể&gt;. Theo tài liệu, dùng cách nào (Vault /
+Memory / KG / File context / Skill)? Vì sao?
+</code></pre>
+<hr />
+<h2 id="read-claude-đào-sâu">Đào sâu</h2>
+<ul>
+<li><strong>Train agent thực sự (không phải đọc tài liệu)</strong> → <a href="#claude">02 — Train via Claude</a></li>
+<li><strong>Glossary thuật ngữ</strong> → <a href="#glossary">05 — Glossary</a></li>
+</ul></section>
+</main>
+</div>
+<script>
+(function() {
+  const searchBox = document.getElementById('toc-search');
+  if (searchBox) {
+    searchBox.addEventListener('input', () => {
+      const q = searchBox.value.toLowerCase().trim();
+      document.querySelectorAll('.toc-root > li').forEach(li => {
+        if (!q) { li.classList.remove('hidden'); li.querySelectorAll('li').forEach(s => s.classList.remove('hidden')); return; }
+        let parentMatch = false;
+        const fileLink = li.querySelector('.toc-file');
+        if (fileLink && fileLink.textContent.toLowerCase().includes(q)) parentMatch = true;
+        let anyChildMatch = false;
+        li.querySelectorAll('ul li').forEach(sub => {
+          const a = sub.querySelector('a');
+          const match = a && a.textContent.toLowerCase().includes(q);
+          sub.classList.toggle('hidden', !match && !parentMatch);
+          if (match) anyChildMatch = true;
+        });
+        li.classList.toggle('hidden', !parentMatch && !anyChildMatch);
+      });
+    });
+  }
+
+  // Scroll-spy: highlight active TOC link
+  const allTocLinks = document.querySelectorAll('.sidebar a[href^="#"]');
+  const tocLinkMap = new Map();
+  allTocLinks.forEach(a => tocLinkMap.set(a.getAttribute('href').slice(1), a));
+
+  const targets = [];
+  document.querySelectorAll('.doc-section, .doc-section h1, .doc-section h2').forEach(el => {
+    if (el.id) targets.push(el);
+  });
+
+  function setActive() {
+    const y = window.scrollY + 80;
+    let current = null;
+    for (const el of targets) {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      if (top <= y) current = el.id;
+      else break;
+    }
+    allTocLinks.forEach(a => a.classList.remove('active'));
+    if (current && tocLinkMap.has(current)) {
+      tocLinkMap.get(current).classList.add('active');
+    }
+  }
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => { setActive(); ticking = false; });
+      ticking = true;
+    }
+  });
+  setActive();
+
+  // Click handler with smooth offset (account for fixed-ish elements)
+  document.querySelectorAll('.sidebar a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        e.preventDefault();
+        const top = el.getBoundingClientRect().top + window.scrollY - 16;
+        window.scrollTo({ top, behavior: 'smooth' });
+        history.replaceState(null, '', '#' + id);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

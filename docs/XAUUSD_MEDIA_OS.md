@@ -4,10 +4,12 @@
 > **Không phải:** hedge fund tự trade, bot bắn signal spam, hệ thống execution.  
 > **Là:** intelligence + multi-brand media + content machine + education + **AI-assisted publishing**.
 
-**Repo runtime hiện tại:** `lungmat-agent` (Hermes multi-agent) — layer **orchestration + Telegram bots + content generation**.  
-**Stack ngoài repo:** Typefully (X + Threads), n8n, ChatGPT/Claude/Cowork, Supabase, Apify, TradingView.
+**Repo:** `lungmat-agent` — **source of truth** persona, JSON schema, vault seed, ImageClient.  
+**Production runtime:** [GoClaw](https://goclaw.sh/) `agent.hoa-homes.com` — Linh Cẩu `@linhcau79_bot`  
+**Publish X + Threads + YouTube metadata:** [Zernio CLI](https://zernio.com/agents) trên GoClaw Nodes  
+**Legacy (dev/test):** lungmat `/content` + Typefully handoff (Phase 7C)
 
-**Cập nhật:** 2026-05-15
+**Cập nhật:** 2026-05-19
 
 **Lịch sử làm việc AI:** [ai-worklog/README.md](./ai-worklog/README.md)
 
@@ -89,7 +91,63 @@ Screenshot tham chiếu: Typefully `AlphaTradingLab_Elite` / `@AlphaTrading79` �
 | Raymond | _(tạo social set tương tự)_ | _(map khi có)_ |
 | VIP 10X | _(tạo social set tương tự)_ | _(map khi có)_ |
 
-**Không build X/Threads API trong `lungmat-agent` trước** nếu Typefully đã là stack chính — ưu tiên **export draft** sang Typefully (Phase 7B).
+**Không build X/Threads API trong `lungmat-agent` trước** nếu Typefully đã là stack chính — ưu tiên **export draft** sang Typefully (Phase 7C).
+
+> **2026-05-19 pivot:** Production publish chuyển **GoClaw + Zernio** (X, Threads, YouTube metadata). Typefully + n8n = legacy/backup. Xem [§2.5](#25-topology-goclaw--zernio--production-2026-05-19).
+
+### 2.5 Topology GoClaw + Zernio — production (2026-05-19)
+
+**Kênh scope:** X + Threads + YouTube (Shorts). **Không** Facebook.
+
+```text
+                    ┌─────────────────────────────┐
+                    │  GoClaw agent.hoa-homes.com │
+                    │  Vault 38 docs + Cron       │
+                    │  Alpha / Raymond / VIP Agent│
+                    │  gpt-image-2 (OpenAI)       │
+                    └──────────────┬──────────────┘
+                                   │
+              Admin Telegram duyệt │
+                                   ▼
+                    ┌─────────────────────────────┐
+                    │  Zernio CLI (@zernio/cli)   │
+                    │  X + Threads (+ YT meta)    │
+                    └──────────────┬──────────────┘
+                                   │
+              ┌────────────────────┼────────────────────┐
+              ▼                    ▼                    ▼
+         X @Alpha...          Threads              YouTube Studio
+         (text + ảnh)         (text + ảnh)         (script + thumb + video tay)
+```
+
+| Nền tảng | Công cụ publish | Ai generate draft |
+|----------|-----------------|-------------------|
+| **X** | **Zernio** (GoClaw agent gọi CLI) | GoClaw Brand Writer Skill (từ repo personas) |
+| **Threads** | **Zernio** (cùng lệnh hoặc post riêng) | Cùng content pack JSON |
+| **YouTube** | **Studio** upload video; metadata từ pack | `youtube_pack` + thumbnail gpt-image-2 |
+| **Telegram** channel (optional) | GoClaw Channel native | `telegram_brief` trong pack |
+| **Kiến thức nền** | GoClaw **Vault** | `docs/vault-seed/` (38 docs) |
+
+**Repo lungmat-agent** giữ:
+- `ContentAgent.ts` — JSON schema reference
+- `src/llm/personas/*.ts` — export → GoClaw Skill
+- `ImageClient.ts` — gpt-image-2 prompts
+- Local `/content` test + Typefully legacy
+
+**Pilot:** Alpha only — [`GOCLAW_ALPHA_PILOT_CHECKLIST.md`](./GOCLAW_ALPHA_PILOT_CHECKLIST.md) · SOP [`SOP_GoClaw_Zernio_PUBLISH.md`](./SOP_GoClaw_Zernio_PUBLISH.md)
+
+**Không dùng pilot:** n8n content cron, lungmat VPS prod, Facebook.
+
+### 2.6 Telegram — 4 làn (không trộn)
+
+| Lane | Bot / kênh | Vai trò |
+|------|------------|---------|
+| **A** | Linh Cẩu `@linhcau79_bot` | Giáo dục, Vault Q&A — **không** sales 1:1 |
+| **B** | Brand bot DM (Alpha / Raymond / VIP10X) | CSKH 1:1, qualify lead, handoff hot — GoClaw **Alpha CSKH** |
+| **C** | SalesMartly | **Out of scope** — xem `TELEGRAM_ONLY_GUIDE.md` |
+| **D** | Admin DM Founder | `/coach` Lửng Mật, duyệt content |
+
+Chi tiết: [`DIGITOP_REALESTATE_1TO1_APPLICATION.md`](./DIGITOP_REALESTATE_1TO1_APPLICATION.md) (Digitop BĐS UC-01).
 
 ### 2.4 YouTube — Typefully không có → chọn hướng nào?
 
@@ -299,17 +357,18 @@ Dùng cho Layer 2/3 prompts (`/prompts/agents`, SOP). Runtime code: `withBrandPe
 
 | Tool | Vai trò trong Media OS |
 |------|------------------------|
-| **ChatGPT** | CTO, roadmap, constitution |
-| **Claude** | Content strategist, thread narrative |
-| **Cowork / Cursor** | `lungmat-agent` code, integrations |
-| **Typefully** | **Publish X + Threads** (draft, schedule, AI rewrite Ctrl+J) |
-| **YouTube Studio** | **Publish video** (file upload — MVP) |
-| **Buffer** (optional) | Lịch / cross-post / YouTube phụ trợ — **không** thay Typefully cho X |
-| **Telegram bots** | **Publish TG** từng brand |
-| **n8n** | Glue: cron daily → gọi `/content` → webhook Typefully |
-| **Apify** | News research |
+| **GoClaw** | **Production runtime** — agents, Vault, Cron, Telegram, Zernio Nodes |
+| **Zernio** | **Publish X + Threads** (+ YouTube metadata); CLI trên GoClaw |
+| **lungmat-agent (repo)** | Persona/schema source, local dev, `/content` test, E2E |
+| **OpenAI gpt-image-2** | Thumbnail + post image (GoClaw provider hoặc `ImageClient.ts`) |
+| **YouTube Studio** | Upload Shorts video (file — MVP tay) |
+| **Typefully** | **Legacy backup** Phase 7C — paste thread nếu Zernio fail |
+| **ChatGPT / Claude / Cowork** | Strategy, pilot checklist, handoff |
+| **Cursor / Claude Code** | Repo code, export Skill, docs |
+| ~~**n8n**~~ | ~~cron → `/content`~~ — **dropped** pilot (GoClaw Cron thay) |
+| **Apify** | News research (lungmat dev; GoClaw web search prod) |
 | **Supabase** | Audit logs (optional) |
-| **TradingView** | Visual source (screenshots — SOP manual/semi-auto) |
+| **TradingView** | Visual source (screenshots — SOP manual) |
 
 ---
 
@@ -322,9 +381,10 @@ Dùng cho Layer 2/3 prompts (`/prompts/agents`, SOP). Runtime code: `withBrandPe
 | 6 Docker/CI | Done | Deploy multi-bot VPS |
 | **7A** | Next | `/content <brand>` + 3-format writer + **brand personas** |
 | **7B** | Next | Approve per brand; TG publish per `brands.json` |
-| **7C** | **Typefully** | Export draft (API hoặc SOP copy) — **không** X API trực tiếp trừ khi bỏ Typefully |
-| **7D** | Sau | Cron daily matrix 3 brand; deprecate trader-only cron |
-| **8** | Repo `prompts/` | Sync constitution + SOP vào monorepo hoặc submodule |
+| **7C** | Done (legacy) | Typefully handoff — backup; **prod → Zernio** |
+| **7D** | Paused | lungmat cron code; **GoClaw Cron** prod |
+| **GoClaw pilot** | **Active** | Alpha → Zernio X/Threads + gpt-image-2 |
+| **8** | Re-scope | GoClaw Vault thay pgvector lungmat |
 
 Chi tiết implement: [PHASE_7_PLAN.md](./PHASE_7_PLAN.md) (sẽ align với file này).
 

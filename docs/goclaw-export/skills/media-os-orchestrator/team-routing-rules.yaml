@@ -1,0 +1,30 @@
+# Media OS Team — routing rules (tham chiếu GoClaw Router team)
+# Đổi target_agent cho khớp TÊN AGENT trên GoClaw UI (Agents list).
+
+rules:
+  - name: Media draft publish
+    condition: keyword_match(["viết bài", "draft", "XAUUSD", "content pack", "Zernio", "đăng", "Threads", "mediaId", "OK đăng", "OK đăng"])
+    target_agent: Alpha Content Writer
+    priority: 1
+
+  - name: Edu vault community
+    condition: keyword_match(["FVG", "vault", "học", "Wyckoff", "R-multiple", "giải thích", "tilt", "liquidity"])
+    target_agent: Linh Cẩu
+    priority: 2
+
+  - name: Sales CSKH
+    condition: keyword_match(["giá", "mua", "VIP", "báo giá", "chốt", "tư vấn", "sales", "1:1"])
+    target_agent: Alpha CSKH
+    priority: 3
+
+  - name: Admin coach
+    condition: keyword_match(["coach", "vận hành", "checklist", "pilot", "cron"])
+    target_agent: Lửng Mật Coach
+    priority: 4
+
+  - name: Fallback media
+    condition: always
+    target_agent: Alpha Content Writer
+    priority: 99
+
+fallback_agent: Alpha Content Writer

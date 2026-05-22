@@ -1,71 +1,74 @@
-Phase 1-4 DONE:
-- Local runtime works
-- Typecheck clean
-- E2E passed (39/39)
-- GitHub pushed
-- Google Drive sync enabled
+# Phase Status — XAUUSD Media OS
 
-Phase 4B — Telegram Real Publish: VERIFIED
-- End-to-end flow: /research → /write_thread → /approval approve → /publish_telegram
-- Real Telegram message delivered (TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID configured)
-- Approval workflow enforced (human must approve before publish)
+> **SSOT tổng thể:** [`PROJECT_STATUS.md`](../PROJECT_STATUS.md)  
+> **Cập nhật:** 2026-05-19
 
-Phase 5A — Real Apify Research Ingestion: DONE
-- ApifyClient uses real Apify (apify/google-search-scraper) when APIFY_API_TOKEN is set
-- Fallback to mock when APIFY_API_TOKEN absent, MOCK_LLM=1, or Apify request fails
-- normalizeApifyItems() handles paginated (organicResults[]) and flat actor output formats
-- FileLogger logs which mode is active (real/mock) + article count + doc_id
-- ResearchAgent reply shows _(mock)_ tag when running in mock mode
-- E2E: 39/39 passing
+---
 
-Phase 5B — Market data (Yahoo) + ops alignment: IN PROGRESS / MOSTLY DONE
-- `YAHOO_SYMBOL_MAP`: XAUUSD, forex, BTC/ETH, SPY/AAPL/MSFT/NVDA → `scrapeYahooMarketData()`
-- `DailyReportAgent` defaults aligned with cron (gold topic + XAUUSD)
-- Unified publish: `src/publish/telegramPublish.ts` — `/approve_publish`, `/publish_telegram`, `POST /approval/:id/approve?publish=true`
-- SOP updated: ADMIN_TELEGRAM_CHAT_ID, /debug_env hasAdminChatId, publish flows, market_summary, cron
-- `docs/architecture.md` — single source of truth for AI/dev
+## Closed (code + verify live 2026-05-16)
 
-Phase 6 — Docker + CI (in repo):
-- `Dockerfile`, `docker-compose.yml`, `.dockerignore`
-- `.github/workflows/ci.yml` — typecheck + e2e mock + docker build
-- `docs/DEPLOY.md` — VPS deploy guide
-- npm scripts `*:ci` for Linux/CI (no `runtime.js`)
-- E2E: `POST /approval/:id/approve` with `publish: true`
+| Phase | Status |
+|-------|--------|
+| 1–5A | Done — runtime, E2E 39/39, Telegram publish, Apify research |
+| 5B | Done — Yahoo, publish unify, SOP |
+| 6 macro | Done — MarketSummary 6 sections verify live |
+| 6 Docker/CI | Done in repo — `Dockerfile`, `.github/workflows/ci.yml` |
+| 7A `/content` | Done — ContentAgent, 3 brand personas, youtube_pack |
+| 7B multi-approve | Done — TG / X / Threads approval buttons |
+| 7C Typefully handoff | Done — **legacy path**; production pivot → Zernio (below) |
 
-Phase 5 — Persona Linh Cẩu: DONE
-- `src/llm/persona.ts`, `withPersona` on MarketSummaryAgent
-- `/start` skill (SupportAgent)
+---
 
-Phase 6 — Macro-aware market summary: CODE DONE (verify 6 sections in Telegram)
-- `EconomicCalendarClient`, `ApifyClient.scrapeForexIntraday`
-- MarketSummaryAgent: macro bundle + 6-section forced prompt
+## Active — GoClaw + Zernio pilot (2026-05-19)
 
-**Strategic pivot → XAUUSD Media OS:** 3 flagship brands (Alpha, Raymond, VIP 10X).
-- Constitution: [XAUUSD_MEDIA_OS.md](./XAUUSD_MEDIA_OS.md)
-- TG = bot/kênh per brand · X/Threads = **Typefully** per brand
-- Plan: [PHASE_7_PLAN.md](./PHASE_7_PLAN.md)
+**Quyết định:** Production content pipeline chuyển sang **GoClaw runtime** + **Zernio publish** (X + Threads + YouTube script).  
+**Repo lungmat-agent** = nguồn persona, JSON schema, vault seed, `ImageClient` gpt-image-2 — **không** VPS prod cho content cron.
 
-AI work history: [ai-worklog/INDEX.md](./ai-worklog/INDEX.md)
+| Workstream | Status | Doc |
+|------------|--------|-----|
+| GoClaw Alpha pilot | **In progress** (Cowork) | [`GOCLAW_ALPHA_PILOT_CHECKLIST.md`](./GOCLAW_ALPHA_PILOT_CHECKLIST.md) |
+| Vault 38 docs upload | Partial (Founder uploading) | [`vault-seed/README.md`](./vault-seed/README.md) |
+| Zernio CLI on GoClaw | In progress | [`SOP_GoClaw_Zernio_PUBLISH.md`](./SOP_GoClaw_Zernio_PUBLISH.md) |
+| Alpha Writer Skill | Ready in repo | [`goclaw-export/alpha-content-writer-skill.md`](./goclaw-export/alpha-content-writer-skill.md) |
+| gpt-image-2 in ContentAgent | Done in repo | `src/integrations/ImageClient.ts` |
+| Raymond / VIP10X Skill | Pending after Alpha pass | clone from `personas/raymond.ts`, `vip10x.ts` |
 
-Phase 7B — Multi-approve (TG / X / Threads): DONE
-- `src/content/contentApprovals.ts`, `telegramCallback.ts`, callbacks `approve:tg|x|th:<id>`
-- Admin DM 4 nút sau `/content`
+---
 
-Phase 7C — Typefully handoff: DONE
-- `src/integrations/TypefullyClient.ts`, [SOP_TYPEFULLY_HANDOFF.md](./SOP_TYPEFULLY_HANDOFF.md)
-- Approve X/Threads → copy Typefully (optional `TYPEFULLY_API_KEY`)
+## Paused / Re-scope
 
-Phase 8 — Knowledge & Memory Expansion: PLAN READY (2026-05-17)
-- Scope chốt theo [ROADMAP.md](./ROADMAP.md): vector DB + semantic retrieval + entity tracking + context stitching
-- Plan chi tiết: [PHASE_8_PLAN.md](./PHASE_8_PLAN.md) — 3 sub-phases (8A vector foundation, 8B content archive, 8C entity + stitching)
-- Pivot kỹ thuật: Voyage AI embeddings + Supabase pgvector, thay `RAGStore` keyword-count hiện tại
-- Tiền điều kiện: Phase 7D + Track B `/coach` đóng
-- VPS/multi-LLM/signal engine reconcile → Phase 9 Autonomous Ops + Phase 10 Production Deployment
+| Phase | Status | Note |
+|-------|--------|------|
+| 7D cron + webhook (lungmat VPS) | **Paused** | Code in `src/index.ts`; GoClaw Cron thay prod |
+| 8 Knowledge & Memory (pgvector) | **Re-scope** | GoClaw Vault + Memory |
+| 9 Autonomous Ops | Backlog | |
+| 10 lungmat VPS deploy | **Archive** | GoClaw `agent.hoa-homes.com` = runtime |
+| n8n media pipeline M0 (Alpha) | **Active** | [`MEDIA_PIPELINE_N8N_M0.md`](./MEDIA_PIPELINE_N8N_M0.md) · GoClaw Alpha publish **frozen** |
+| Typefully auto-publish | **Legacy backup** | Zernio primary for X/Threads |
 
-Next:
-- **7D** content cron + deprecate legacy commands (see [PHASE_7_PLAN.md](./PHASE_7_PLAN.md))
-- **Verify live:** [NEXT_STEPS.md](./NEXT_STEPS.md), admin DM + Typefully paste
-- **Phase 8A** Vector Foundation sau khi 7D đóng (see [PHASE_8_PLAN.md](./PHASE_8_PLAN.md))
-- **Deploy VPS:** [DEPLOY.md](./DEPLOY.md) — đẩy về Phase 10
-- Re-test `/market_summary` → 6 sections after macro patch
-- **Phase 7A:** ✅ `/content <brand>` + `youtube_pack.shorts_script` + personas (see PHASE_7_PLAN)
+---
+
+## Pending verify
+
+| Item | Owner |
+|------|-------|
+| `/coach` admin + non-admin | lungmat local / Cowork |
+| GoClaw Vault smoke 4 câu | Cowork + Founder |
+| E2E Alpha: draft → OK → Zernio post | Cowork |
+
+---
+
+## Next (sau Alpha pilot pass)
+
+1. Export Skill Raymond + VIP10X → GoClaw agents
+2. Cron 13:00 / 19:00 VN
+3. Optional: bridge lungmat `/content` dev test ↔ GoClaw Skill sync
+4. SalesMartly: mount route nếu urgent (`SALESMARTLY_ENABLED=0` default)
+
+---
+
+## References
+
+- Constitution: [`XAUUSD_MEDIA_OS.md`](./XAUUSD_MEDIA_OS.md)
+- Architecture (lungmat code): [`architecture.md`](./architecture.md)
+- AI worklog: [`ai-worklog/INDEX.md`](./ai-worklog/INDEX.md)
