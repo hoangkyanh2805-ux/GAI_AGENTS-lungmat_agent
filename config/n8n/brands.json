@@ -1,0 +1,82 @@
+{
+  "$schema": "./schemas/media-brand-config.schema.json",
+  "version": "1.0.0",
+  "brands": {
+    "alpha": {
+      "id": "alpha",
+      "displayName": "Alpha Trading Lab",
+      "enabled": true,
+      "persona": {
+        "skillSource": "docs/goclaw-export/skills/alpha-content-writer/SKILL.md",
+        "promptFile": "config/n8n/prompts/alpha-writer-system.md"
+      },
+      "topicDefault": "XAUUSD daily brief — liquidity và macro (Fed, DXY)",
+      "cron": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "draftAt": "08:00"
+      },
+      "telegram": {
+        "adminChatIdEnv": "N8N_TELEGRAM_ADMIN_CHAT_ID",
+        "approvalKeywords": ["OK đăng", "OK dang", "duyệt", "đăng", "dang"],
+        "rejectKeywords": ["hủy", "huy", "reject", "sửa"]
+      },
+      "zernio": {
+        "apiBaseDefault": "https://zernio.com/api/v1",
+        "apiBaseEnv": "ZERNIO_API_BASE",
+        "apiKeyEnv": "ZERNIO_API_KEY",
+        "accounts": {
+          "x": {
+            "handle": "@AlphaTrading79",
+            "accountId": "6a0c6dbd5e333c05299f1d12"
+          },
+          "threads": {
+            "handle": "@alphatrading.lab",
+            "accountId": "6a0c28345e333c05299b981a"
+          }
+        },
+        "publish": {
+          "mode": "cross_post",
+          "platforms": ["twitter", "threads"],
+          "accountIds": [
+            "6a0c6dbd5e333c05299f1d12",
+            "6a0c28345e333c05299b981a"
+          ],
+          "status": "PUBLISHED"
+        }
+      },
+      "media": {
+        "driveFolderId": "1IW_UN4hnezRWvF3RSNMmaUXcf9pdzwbv",
+        "readySubfolder": "01_ready_jpg/full",
+        "m0ImageMode": "manual_mediaId"
+      },
+      "output": {
+        "jsonDirEnv": "N8N_MEDIA_JSON_DIR",
+        "jsonPattern": "alpha/{yyyy-MM-dd}/{runId}.json"
+      },
+      "sheet": {
+        "spreadsheetIdEnv": "N8N_MEDIA_SHEET_ID",
+        "tab": "alpha_publish_log"
+      }
+    },
+    "raymond": {
+      "id": "raymond",
+      "displayName": "Raymond - Gold Trading Expert",
+      "enabled": false,
+      "persona": {
+        "skillSource": "docs/goclaw-export/skills/raymond-content-writer/SKILL.md",
+        "promptFile": "config/n8n/prompts/raymond-writer-system.md"
+      },
+      "note": "M1 — enable after alpha M0 pass"
+    },
+    "vip10x": {
+      "id": "vip10x",
+      "displayName": "VIP 10X",
+      "enabled": false,
+      "persona": {
+        "skillSource": "docs/goclaw-export/skills/vip10x-content-writer/SKILL.md",
+        "promptFile": "config/n8n/prompts/vip10x-writer-system.md"
+      },
+      "note": "M1 — enable after alpha M0 pass"
+    }
+  }
+}

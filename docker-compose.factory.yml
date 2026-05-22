@@ -1,0 +1,72 @@
+# LungMat Content Factory — Layer 1 (v2.2 LangChain core)
+# Doc: docs/ALPHA_OSS_CONTENT_FACTORY_CATALOG.md
+#
+# Profiles:
+#   docker compose -f docker-compose.factory.yml --profile lc-alpha up -d
+#   docker compose -f docker-compose.factory.yml --profile fin-feeder up -d
+
+services:
+  # F0 — LangChain social-media-agent fork (Alpha)
+  social-media-agent-alpha:
+    profiles: ["lc-alpha"]
+    build:
+      context: ./oss-forks/social-media-agent-lungmat
+      dockerfile: Dockerfile
+    image: lungmat/social-media-agent-alpha:local
+    restart: unless-stopped
+    env_file:
+      - ./oss-forks/social-media-agent-lungmat/.env
+    environment:
+      BRAND_ID: alpha
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - lc-alpha-data:/app/data
+    networks:
+      - lungmat-factory
+    # Sau clone: thêm Dockerfile từ upstream hoặc langgraph platform
+    # Health: curl localhost:54367 (langgraph dev)
+
+  # F1 — Raymond (copy env + persona, same image tag khác env file)
+  social-media-agent-raymond:
+    profiles: ["lc-raymond"]
+    image: lungmat/social-media-agent-alpha:local
+    restart: unless-stopped
+    env_file:
+      - ./oss-forks/social-media-agent-raymond/.env
+    environment:
+      BRAND_ID: raymond
+      TZ: Asia/Ho_Chi_Minh
+    networks:
+      - lungmat-factory
+
+  # F3 — fin-thread news feeder (clone repo trước)
+  fin-thread-feeder:
+    profiles: ["fin-feeder"]
+    build:
+      context: ./oss-forks/fin-thread-feeder
+      dockerfile: Dockerfile
+    image: lungmat/fin-thread-feeder:local
+    restart: unless-stopped
+    env_file:
+      - ./oss-forks/fin-thread-feeder/.env
+    networks:
+      - lungmat-factory
+
+  # Legacy — ai-twitter-bot (rank #6, không dùng cho POC)
+  alpha-factory-legacy:
+    profiles: ["legacy"]
+    build:
+      context: ./services/alpha-factory
+      dockerfile: Dockerfile
+    image: lungmat/alpha-factory-legacy:local
+    env_file:
+      - ./services/alpha-factory/.env
+    networks:
+      - lungmat-factory
+
+networks:
+  lungmat-factory:
+    driver: bridge
+
+volumes:
+  lc-alpha-data:

@@ -1,0 +1,338 @@
+{
+  "name": "Alpha Media M0 (template)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Alpha Media M0 — 1 workflow đủ M0\n\n**KEY (1 lần):** n8n Settings → Variables\nANTHROPIC_API_KEY · ZERNIO_API_KEY · ZERNIO_API_BASE · N8N_TELEGRAM_ADMIN_CHAT_ID\n+ Credential Telegram (2 node). KHÔNG điền key trong Init Config.\n\n**Doc:** docs/N8N_ALPHA_ONE_SHOT.md\n\n**Test:** Manual Trigger. Cron + Sheet = OFF.\n**Approve:** Wait resume { approved, media_id }",
+        "height": 380,
+        "width": 420
+      },
+      "id": "a1000001-0000-4000-8000-000000000001",
+      "name": "README Sticky",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-520, -120]
+    },
+    {
+      "parameters": {},
+      "id": "a1000001-0000-4000-8000-000000000002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a1000001-0000-4000-8000-000000000003",
+      "name": "Cron 08:00 VN",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 200],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"brand\": \"alpha\",\n  \"topic\": \"XAUUSD daily brief — liquidity và macro (Fed, DXY)\",\n  \"zernio_account_ids\": [\"6a0c6dbd5e333c05299f1d12\", \"6a0c28345e333c05299b981a\"],\n  \"x_handle\": \"@AlphaTrading79\",\n  \"threads_handle\": \"@alphatrading.lab\"\n}"
+      },
+      "id": "a1000001-0000-4000-8000-000000000004",
+      "name": "Init Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $input.first().json;\nconst now = new Date();\nconst pad = (n) => String(n).padStart(2, '0');\nconst d = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;\nconst t = `${pad(now.getHours())}${pad(now.getMinutes())}`;\nconst runId = `alpha-${d}-${t}-${Math.random().toString(36).slice(2, 6)}`;\nreturn [{\n  json: {\n    ...cfg,\n    run_id: runId,\n    date: d,\n    status: 'draft_ready',\n    created_at: now.toISOString()\n  }\n}];"
+      },
+      "id": "a1000001-0000-4000-8000-000000000005",
+      "name": "Init Run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 8192,\n  \"system\": \"Bạn là Alpha Content Writer. Trả ĐÚNG MỘT JSON object (không markdown). brand=alpha. Fields: telegram_brief, x_thread (array, mỗi tweet <=280 chars), threads_post (<=500), youtube_pack, compliance {status, failed_rules}, data_status. Không signal, không entry/SL/TP, không URL trong tweet.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Topic: {{ $json.topic }}. Sinh content pack JSON.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "a1000001-0000-4000-8000-000000000006",
+      "name": "Claude Writer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const run = $('Init Run').first().json;\nconst body = $input.first().json;\nlet text = '';\nif (body.content && body.content[0]?.text) text = body.content[0].text;\nelse if (typeof body === 'string') text = body;\nelse text = JSON.stringify(body);\nconst fenced = text.match(/```(?:json)?\\s*([\\s\\S]*?)```/i);\nconst candidate = (fenced?.[1] ?? text).trim();\nconst start = candidate.indexOf('{');\nconst end = candidate.lastIndexOf('}');\nif (start < 0 || end <= start) throw new Error('Writer: no JSON in Claude response');\nconst pack = JSON.parse(candidate.slice(start, end + 1));\npack.brand = 'alpha';\npack.topic = run.topic;\npack.run_id = run.run_id;\nif (!Array.isArray(pack.x_thread)) {\n  if (typeof pack.x_thread === 'string') pack.x_thread = pack.x_thread.split(/\\n+/).filter(Boolean);\n  else pack.x_thread = [];\n}\nconst banned = [/vào long/i, /vào short/i, /entry/i, /\\bSL\\b/i, /\\bTP\\b/i, /chắc ăn/i, /guaranteed/i];\nconst failed = [];\nif (banned.some((r) => (pack.telegram_brief || '').match(r) || pack.x_thread.some((t) => t.match(r)))) failed.push(1);\nfor (const t of pack.x_thread) { if (t.length > 280) failed.push(4); if (/https?:\\/\\//i.test(t)) failed.push(4); }\nif ((pack.threads_post || '').length > 500) failed.push(4);\npack.compliance = { status: failed.length ? 'FAIL' : 'PASS', failed_rules: [...new Set(failed)] };\nreturn [{ json: { ...run, pack, writer_output_file: `output/alpha/${run.date}/${run.run_id}.pack.json` } }];"
+      },
+      "id": "a1000001-0000-4000-8000-000000000007",
+      "name": "Parse Pack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-pass",
+              "leftValue": "={{ $json.pack.compliance.status }}",
+              "rightValue": "PASS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1000001-0000-4000-8000-000000000008",
+      "name": "Compliance PASS?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.N8N_TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "=Alpha draft {{ $json.run_id }}\n\nCompliance: {{ $json.pack.compliance.status }}\n\n--- Threads preview ---\n{{ $json.pack.threads_post }}\n\n--- X tweet 1 ---\n{{ $json.pack.x_thread[0] }}\n\nReply OK đăng + mediaId (Zernio Media).\nHoặc resume webhook Wait với approved=true.",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "a1000001-0000-4000-8000-000000000009",
+      "name": "Telegram Preview",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1440, -80],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram Alpha Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {
+          "webhookSuffix": "alpha-approve"
+        }
+      },
+      "id": "a1000001-0000-4000-8000-00000000000a",
+      "name": "Wait Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1680, -80],
+      "webhookId": "alpha-media-m0-approve"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Parse Pack').first().json;\nconst body = $input.first().json.body ?? $input.first().json;\nconst approved = body.approved === true || /OK đăng|OK dang|duyệt|dang/i.test(String(body.reply_text || body.text || ''));\nconst mediaId = body.media_id || body.mediaId || (String(body.reply_text || '').match(/mediaId[:\\s]+([\\w-]+)/i)?.[1]);\nif (!approved) throw new Error('Not approved');\nreturn [{ json: { ...prev, status: 'approved', approved_at: new Date().toISOString(), media: { mode: 'manual_mediaId', media_id: mediaId || null } } }];"
+      },
+      "id": "a1000001-0000-4000-8000-00000000000b",
+      "name": "Parse Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, -80]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.ZERNIO_API_BASE || 'https://zernio.com/api/v1').replace(/\\/$/, '') }}/posts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.ZERNIO_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": {{ JSON.stringify($json.pack.x_thread[0]) }},\n  \"publishNow\": true,\n  \"platforms\": [\n    { \"platform\": \"twitter\", \"accountId\": \"{{ $json.zernio_account_ids[0] }}\" },\n    { \"platform\": \"threads\", \"accountId\": \"{{ $json.zernio_account_ids[1] }}\", \"customContent\": {{ JSON.stringify($json.pack.threads_post) }} }\n  ],\n  \"mediaItems\": []\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "a1000001-0000-4000-8000-00000000000c",
+      "name": "Zernio Publish",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2160, -80],
+      "notesInFlow": true,
+      "notes": "Zernio REST: docs/ZERNIO_N8N_HTTP_PUBLISH.md — mediaItems: bổ sung sau khi verify upload API."
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Parse Approval').first().json;\nconst z = $input.first().json;\nconst postId = z.id || z.postId || z.data?.id || null;\nconst publish = {\n  agent: 'n8n-zernio',\n  zernio_post_id: postId,\n  raw: z,\n  x_url: postId ? `https://x.com/AlphaTrading79/status/${postId}` : null,\n  threads_url: null,\n  output_file: `output/alpha/${ctx.date}/${ctx.run_id}.publish.json`\n};\nconst run = {\n  run_id: ctx.run_id,\n  brand: 'alpha',\n  topic: ctx.topic,\n  status: postId ? 'published' : 'failed',\n  created_at: ctx.created_at,\n  updated_at: new Date().toISOString(),\n  stages: {\n    writer: { agent: 'n8n-writer', model: 'claude-sonnet-4-20250514', output_file: ctx.writer_output_file },\n    media: ctx.media,\n    telegram: { agent: 'n8n-telegram', approved: true, approved_at: ctx.approved_at },\n    publish,\n  },\n  pack: ctx.pack\n};\nreturn [{ json: run }];"
+      },
+      "id": "a1000001-0000-4000-8000-00000000000d",
+      "name": "Merge Run JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, -80]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.N8N_MEDIA_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "alpha_publish_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "date": "={{ $json.created_at }}",
+            "topic": "={{ $json.topic }}",
+            "status": "={{ $json.status }}",
+            "zernio_post_id": "={{ $json.stages.publish.zernio_post_id }}",
+            "compliance": "={{ $json.pack.compliance.status }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "a1000001-0000-4000-8000-00000000000e",
+      "name": "Google Sheet Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2640, -80],
+      "disabled": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CONFIGURE_ME",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.N8N_TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "=❌ Compliance FAIL run {{ $json.run_id }}\nRules: {{ $json.pack.compliance.failed_rules }}\nSửa tay rồi chạy lại.",
+        "additionalFields": {}
+      },
+      "id": "a1000001-0000-4000-8000-00000000000f",
+      "name": "Telegram FAIL",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1440, 160],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram Alpha Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Init Config", "type": "main", "index": 0 }]]
+    },
+    "Cron 08:00 VN": {
+      "main": [[{ "node": "Init Config", "type": "main", "index": 0 }]]
+    },
+    "Init Config": {
+      "main": [[{ "node": "Init Run", "type": "main", "index": 0 }]]
+    },
+    "Init Run": {
+      "main": [[{ "node": "Claude Writer", "type": "main", "index": 0 }]]
+    },
+    "Claude Writer": {
+      "main": [[{ "node": "Parse Pack", "type": "main", "index": 0 }]]
+    },
+    "Parse Pack": {
+      "main": [[{ "node": "Compliance PASS?", "type": "main", "index": 0 }]]
+    },
+    "Compliance PASS?": {
+      "main": [
+        [{ "node": "Telegram Preview", "type": "main", "index": 0 }],
+        [{ "node": "Telegram FAIL", "type": "main", "index": 0 }]
+      ]
+    },
+    "Telegram Preview": {
+      "main": [[{ "node": "Wait Approval", "type": "main", "index": 0 }]]
+    },
+    "Wait Approval": {
+      "main": [[{ "node": "Parse Approval", "type": "main", "index": 0 }]]
+    },
+    "Parse Approval": {
+      "main": [[{ "node": "Zernio Publish", "type": "main", "index": 0 }]]
+    },
+    "Zernio Publish": {
+      "main": [[{ "node": "Merge Run JSON", "type": "main", "index": 0 }]]
+    },
+    "Merge Run JSON": {
+      "main": [[{ "node": "Google Sheet Log", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh"
+  },
+  "versionId": "alpha-m0-template-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "lungmat-agent-alpha-m0"
+  },
+  "tags": [
+    { "name": "alpha" },
+    { "name": "media-m0" }
+  ],
+  "pinData": {}
+}

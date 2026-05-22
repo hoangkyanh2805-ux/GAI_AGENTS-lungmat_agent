@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alpha.local/schemas/alpha-run.schema.json",
+  "title": "Alpha n8n Run",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["run_id", "brand_id", "date", "status", "pack", "compliance", "telegram", "media", "publish", "log"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "brand_id": { "type": "string" },
+    "date": { "type": "string" },
+    "topic": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["initialized", "draft_ready", "awaiting_approval", "approved", "published", "failed", "cancelled"]
+    },
+    "pack": { "$ref": "alpha-content-pack.schema.json" },
+    "compliance": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["status", "errors"],
+      "properties": {
+        "status": { "type": "string", "enum": ["PASS", "FAIL"] },
+        "errors": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "telegram": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "chat_id": { "type": "string" },
+        "draft_message_id": { "type": "string" },
+        "approval_text": { "type": "string" },
+        "approved_at": { "type": "string" }
+      }
+    },
+    "media": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "mode": { "type": "string" },
+        "media_id": { "type": "string" },
+        "required": { "type": "boolean" }
+      }
+    },
+    "publish": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "provider": { "type": "string" },
+        "zernio_post_id": { "type": "string" },
+        "x_status": { "type": "string" },
+        "threads_status": { "type": "string" },
+        "x_url": { "type": "string" },
+        "threads_url": { "type": "string" },
+        "error": { "type": "string" }
+      }
+    },
+    "log": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "sheet_id": { "type": "string" },
+        "row_id": { "type": "string" },
+        "json_path": { "type": "string" }
+      }
+    }
+  }
+}

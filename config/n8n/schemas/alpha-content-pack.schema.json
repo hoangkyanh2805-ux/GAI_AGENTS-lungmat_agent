@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alpha.local/schemas/alpha-content-pack.schema.json",
+  "title": "Alpha Content Pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["telegram_brief", "x_thread", "threads_post", "youtube_pack", "image_prompts", "meta"],
+  "properties": {
+    "telegram_brief": {
+      "type": "string",
+      "minLength": 20
+    },
+    "x_thread": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "items": {
+        "type": "string",
+        "maxLength": 280
+      }
+    },
+    "threads_post": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 500
+    },
+    "youtube_pack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "description", "tags", "shorts_script", "thumbnail_brief"],
+      "properties": {
+        "title": { "type": "string", "minLength": 5 },
+        "description": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "shorts_script": { "type": "string", "minLength": 30 },
+        "thumbnail_brief": { "type": "string" }
+      }
+    },
+    "image_prompts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "use", "prompt", "style"],
+        "properties": {
+          "id": { "type": "string" },
+          "use": { "type": "string" },
+          "prompt": { "type": "string", "minLength": 20 },
+          "style": { "type": "string" }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["data_status", "sources", "compliance"],
+      "properties": {
+        "data_status": {
+          "type": "string",
+          "enum": ["verified", "unverified"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "name": { "type": "string" },
+              "url": { "type": "string" },
+              "timestamp": { "type": "string" }
+            }
+          }
+        },
+        "compliance": {
+          "type": "string",
+          "enum": ["PASS", "FAIL"]
+        }
+      }
+    }
+  }
+}

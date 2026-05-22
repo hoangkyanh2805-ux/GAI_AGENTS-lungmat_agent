@@ -1,0 +1,63 @@
+{
+  "run_id": "alpha-2026-05-23-0800-ab12",
+  "brand_id": "alpha-trading-lab",
+  "date": "2026-05-23",
+  "topic": "XAUUSD daily brief - liquidity and macro (Fed, DXY)",
+  "status": "published",
+  "pack": {
+    "telegram_brief": "Alpha daily brief. Data: chua xac nhan. Compliance: PASS.",
+    "x_thread": [
+      "1/ XAUUSD hom nay: dung nhin moi cay nen nhu tin hieu. Hay nhin nhu ban do thanh khoan va tam ly cho doi. #XAUUSD #SmartMoney"
+    ],
+    "threads_post": "XAUUSD hom nay nen doc theo liquidity context, khong phai tim entry. Khi data chua verify, ky luat dau tien la khong bia so.",
+    "youtube_pack": {
+      "title": "XAUUSD Liquidity Context",
+      "description": "Daily Alpha Trading Lab brief.",
+      "tags": ["XAUUSD", "gold", "SmartMoney"],
+      "shorts_script": "Hook: XAUUSD khong thieu co hoi, chi thieu ky luat. Body: doc liquidity context. CTA: theo doi Alpha Trading Lab.",
+      "thumbnail_brief": "Liquidity First"
+    },
+    "image_prompts": [
+      {
+        "id": "img_1",
+        "use": "X/Threads visual",
+        "prompt": "Professional institutional gold trading desk with abstract liquidity zones, no text overlay.",
+        "style": "dark, gold accent, institutional"
+      }
+    ],
+    "meta": {
+      "data_status": "unverified",
+      "sources": [],
+      "compliance": "PASS"
+    }
+  },
+  "compliance": {
+    "status": "PASS",
+    "errors": []
+  },
+  "telegram": {
+    "chat_id": "123456789",
+    "draft_message_id": "101",
+    "approval_text": "OK dang mediaId: media_abc123",
+    "approved_at": "2026-05-23T08:03:00+07:00"
+  },
+  "media": {
+    "mode": "manual_mediaId",
+    "media_id": "media_abc123",
+    "required": false
+  },
+  "publish": {
+    "provider": "zernio",
+    "zernio_post_id": "post_abc123",
+    "x_status": "published",
+    "threads_status": "published",
+    "x_url": "",
+    "threads_url": "",
+    "error": ""
+  },
+  "log": {
+    "sheet_id": "N8N_MEDIA_SHEET_ID",
+    "row_id": "42",
+    "json_path": "output/alpha/2026-05-23/alpha-2026-05-23-0800-ab12.json"
+  }
+}
