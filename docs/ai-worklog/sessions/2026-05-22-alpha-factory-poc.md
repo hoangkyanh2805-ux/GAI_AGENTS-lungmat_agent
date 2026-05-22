@@ -52,7 +52,7 @@ python main.py
 - [ ] `curl` Zernio REST pass
 - [ ] `python main.py` → n8n → TG preview
 - [ ] `OK đăng` + optional mediaId → Published trên dashboard
-- [ ] Commit `services/alpha-factory/` + `alpha-m0.webhook-intake.json` vào git (nếu chưa push)
+- [x] Commit + push GitHub (`f43e758`, `1162031` trên `main`) — 2026-05-22
 
 ---
 
