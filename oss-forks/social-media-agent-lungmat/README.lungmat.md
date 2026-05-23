@@ -23,22 +23,31 @@ cp ../.env.alpha.example .env
 yarn install
 ```
 
+**Windows (không cần `yarn` global):** repo trên Google Drive hay lỗi `yarn install` EPERM → copy folder sang `C:\dev\social-media-agent-lungmat` rồi `yarn install`, hoặc dùng `npx` như dưới.
+
 ## Run
 
-**A — Pack CLI (không LangGraph):**
+**A — Pack CLI (không chạy graph — cùng prompt `alpha_writer.md`):**
 
 ```bash
-yarn lungmat:pack --dry-run
-yarn lungmat:pack
+npx tsx scripts/lungmat-pack-cli.ts --dry-run
+npx tsx scripts/lungmat-pack-cli.ts
 ```
 
-**B — Full graph (1 URL + HITL Inbox → n8n):**
+**B — LangGraph dev (graph `generate_post`, Studio):**
+
+```powershell
+# Terminal 1 — giữ chạy
+powershell -ExecutionPolicy Bypass -File oss-forks\scripts\langgraph-dev.ps1
+# Studio: https://smith.langchain.com/studio?baseUrl=http://localhost:54367
+```
 
 ```bash
-yarn langgraph:in_mem:up
-# terminal khác:
-yarn generate_post:alpha "https://www.fxstreet.com/news/..."
+# Terminal 2 — cần FIRECRAWL_API_KEY
+npx tsx scripts/generate-post-alpha.ts "https://www.fxstreet.com/news/..."
 ```
+
+Hoặc: `yarn langgraph:in_mem:up` nếu `yarn install` đã xong.
 
 Agent Inbox: https://dev.agentinbox.ai/ — graph `generate_post`, port `54367`.
 
