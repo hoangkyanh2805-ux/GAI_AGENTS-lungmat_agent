@@ -3,6 +3,39 @@
 > **Mục tiêu:** Chạy pipeline **Layer 1 (Python)** → **Layer 2 (n8n mỏng, không LLM)** → **Layer 3 (Zernio X + Threads)**.  
 > **Không** dùng Claude Writer trong n8n — tránh mỗi tin Telegram kích hoạt lại LLM.
 
+---
+
+## Máy mới — đọc theo thứ tự (Founder / AI)
+
+| # | File | Mục đích |
+|---|------|----------|
+| 1 | **File này** — `docs/ALPHA_FACTORY_SETUP_GUIDE.md` | Luồng Alpha factory (chạy M0) |
+| 2 | [`docs/ai-worklog/INDEX.md`](ai-worklog/INDEX.md) → [`sessions/2026-05-22-alpha-factory-poc.md`](ai-worklog/sessions/2026-05-22-alpha-factory-poc.md) | POC + việc còn lại / blocker |
+| 3 | [`PROJECT_STATUS.md`](../PROJECT_STATUS.md) + [`architecture.md`](architecture.md) | Toàn dự án / phase |
+| 4 | [`ALPHA_FACTORY_NOTION_IMPORT.md`](ALPHA_FACTORY_NOTION_IMPORT.md) | Import Notion (tuỳ chọn) |
+
+### Một câu copy-paste (Cursor / Claude trên máy mới)
+
+```text
+git pull origin main
+rồi đọc docs/ALPHA_FACTORY_SETUP_GUIDE.md, session docs/ai-worklog/sessions/2026-05-22-alpha-factory-poc.md, và docs/architecture.md trước khi sửa code.
+Sau pull: cd services/alpha-factory → copy .env.example .env → điền key (không có trong repo).
+```
+
+### Lệnh nhanh sau `git pull`
+
+```powershell
+cd services/alpha-factory
+copy .env.example .env
+# Sửa .env: ANTHROPIC_API_KEY, N8N_WEBHOOK_URL, (tuỳ chọn) NEWSAPI_KEY
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python main.py --dry-run
+```
+
+---
+
 | Thành phần | Path |
 |------------|------|
 | Factory (Python) | `services/alpha-factory/` |

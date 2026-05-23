@@ -56,6 +56,18 @@ python main.py
 
 ---
 
+## Máy mới — handoff
+
+Đọc theo thứ tự: **SETUP_GUIDE** → **file này** → `PROJECT_STATUS.md` + `architecture.md` → (tuỳ chọn) `ALPHA_FACTORY_NOTION_IMPORT.md`.
+
+```text
+git pull origin main
+rồi đọc docs/ALPHA_FACTORY_SETUP_GUIDE.md, session docs/ai-worklog/sessions/2026-05-22-alpha-factory-poc.md, và docs/architecture.md trước khi sửa code.
+Sau pull: cd services/alpha-factory → copy .env.example .env → điền key (không có trong repo).
+```
+
+---
+
 ## Links
 
 - **[`ALPHA_FACTORY_SETUP_GUIDE.md`](../../ALPHA_FACTORY_SETUP_GUIDE.md)** — hướng dẫn từng bước (mở file này trước)

@@ -3,7 +3,7 @@
 > Single Source of Truth cho Founder, Cowork, Cursor, Claude Code va cac AI session tiep theo.
 > Moi session nen doc file nay dau tien, cap nhat cuoi session neu co thay doi trang thai.
 
-**Last updated:** 2026-05-21 (**A0–A2 DONE** · Zernio MCP live · **ưu tiên: Telegram duyệt T1–T4** · Cowork brief mới)
+**Last updated:** 2026-05-22 (Alpha factory M0 POC · handoff **máy mới** → [`ALPHA_FACTORY_SETUP_GUIDE.md`](docs/ALPHA_FACTORY_SETUP_GUIDE.md))
 **Repo:** `GAI_AGENTS-lungmat_agent` / `lungmat-agent`
 **Production runtime:** [GoClaw](https://goclaw.sh/) `agent.hoa-homes.com` — Linh Cẩu `@linhcau79_bot` · map: [`docs/GOCLAW_RUNTIME_GUIDE.md`](docs/GOCLAW_RUNTIME_GUIDE.md)
 **Publish prod (pivot M0):** **n8n pipeline Alpha** (Claude → TG duyệt → Zernio HTTP → Sheet) — [`MEDIA_PIPELINE_N8N_M0.md`](docs/MEDIA_PIPELINE_N8N_M0.md) · config [`config/n8n/brands.json`](config/n8n/brands.json)  
@@ -28,7 +28,8 @@
 | **Digitop / CSKH / SM** | Docs + skill export | Sau T3 pass |
 | **GoClaw Team điều phối** | **Docs Done · ZIP ready** · Founder UI pending | Claude Code Done · [`GOCLAW_UI_FOUNDER.md`](docs/goclaw-export/skills/media-os-orchestrator/GOCLAW_UI_FOUNDER.md) · ZIP: `skills/zips/media-os-orchestrator.zip` |
 | **Analytics / BI** (optional) | Skill AT lane | [`analytical-thinking-agents-brief.md`](docs/briefs/analytical-thinking-agents-brief.md) |
-| **Ai làm gì tiếp** | **n8n M0 Alpha** workflow + env · pass Done criteria §5 | GoClaw: Vault/Linh Cẩu only |
+| **Ai làm gì tiếp** | **n8n M0 Alpha** + `services/alpha-factory` · E2E curl Zernio pending | Setup: [`ALPHA_FACTORY_SETUP_GUIDE.md`](docs/ALPHA_FACTORY_SETUP_GUIDE.md) |
+| **Alpha factory POC** | Code **done** (`f43e758` on `main`) | E2E: session [`2026-05-22-alpha-factory-poc.md`](docs/ai-worklog/sessions/2026-05-22-alpha-factory-poc.md) |
 
 **Blocker đang mở:** (1) **Telegram Channel** chưa pair Alpha Writer (T1) · (2) Skill publish tách X/Threads + `OK đăng` trên TG (T2) · (3) E2E TG+ảnh chưa pass (T3) · (4) Cron 08:00 VN (T4) · (5) Vault 24/38.
 
@@ -611,6 +612,28 @@ Con lai tu verify loop: `/coach` admin DM + non-admin rejection.
 | `docs/MEDIA_OS_COORDINATION.md` | Cowork · Cursor · Claude Code · GoClaw |
 | `src/integrations/ImageClient.ts` | gpt-image-2 |
 | `docs/SOP_TYPEFULLY_HANDOFF.md` | Legacy Typefully (backup) |
+| `docs/ALPHA_FACTORY_SETUP_GUIDE.md` | **M0 factory** — đọc đầu tiên trên máy mới |
+| `docs/ALPHA_FACTORY_NOTION_IMPORT.md` | Import Notion (tuỳ chọn) |
+| `docs/ai-worklog/sessions/2026-05-22-alpha-factory-poc.md` | POC + blocker Zernio HTTP |
+
+---
+
+## 7b. Máy mới — Alpha factory M0 (đọc theo thứ tự)
+
+| # | Path |
+|---|------|
+| 1 | [`docs/ALPHA_FACTORY_SETUP_GUIDE.md`](docs/ALPHA_FACTORY_SETUP_GUIDE.md) |
+| 2 | [`docs/ai-worklog/INDEX.md`](docs/ai-worklog/INDEX.md) → [`sessions/2026-05-22-alpha-factory-poc.md`](docs/ai-worklog/sessions/2026-05-22-alpha-factory-poc.md) |
+| 3 | `PROJECT_STATUS.md` (file này) + [`docs/architecture.md`](docs/architecture.md) |
+| 4 | [`docs/ALPHA_FACTORY_NOTION_IMPORT.md`](docs/ALPHA_FACTORY_NOTION_IMPORT.md) (tuỳ chọn) |
+
+**Copy-paste cho Cursor / Claude:**
+
+```text
+git pull origin main
+rồi đọc docs/ALPHA_FACTORY_SETUP_GUIDE.md, session docs/ai-worklog/sessions/2026-05-22-alpha-factory-poc.md, và docs/architecture.md trước khi sửa code.
+Sau pull: cd services/alpha-factory → copy .env.example .env → điền key (không có trong repo).
+```
 
 ---
 

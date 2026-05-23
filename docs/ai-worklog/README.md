@@ -33,8 +33,23 @@ docs/ai-worklog/
 | 1 | `docs/ai-worklog/INDEX.md` (session gần nhất) |
 | 2 | `docs/XAUUSD_MEDIA_OS.md` (chiến lược sản phẩm) |
 | 3 | `docs/architecture.md` (logic code) |
-| 4 | `docs/PHASE_STATUS.md` |
+| 4 | `PROJECT_STATUS.md` |
 | 5 | Session file cụ thể nếu đang tiếp tục task |
+
+### Nhánh Alpha factory M0 (máy mới)
+
+| Thứ tự | File |
+|--------|------|
+| 1 | [`docs/ALPHA_FACTORY_SETUP_GUIDE.md`](../ALPHA_FACTORY_SETUP_GUIDE.md) |
+| 2 | `INDEX.md` → [`sessions/2026-05-22-alpha-factory-poc.md`](sessions/2026-05-22-alpha-factory-poc.md) |
+| 3 | `PROJECT_STATUS.md` + `docs/architecture.md` |
+| 4 | (tuỳ chọn) [`ALPHA_FACTORY_NOTION_IMPORT.md`](../ALPHA_FACTORY_NOTION_IMPORT.md) |
+
+```text
+git pull origin main
+rồi đọc docs/ALPHA_FACTORY_SETUP_GUIDE.md, session docs/ai-worklog/sessions/2026-05-22-alpha-factory-poc.md, và docs/architecture.md trước khi sửa code.
+Sau pull: cd services/alpha-factory → copy .env.example .env → điền key (không có trong repo).
+```
 
 ## Công cụ AI trong dự án
 
