@@ -10,20 +10,22 @@ cp ../.env.alpha.example .env
 yarn install
 ```
 
-## Customize (F0)
+## F0 Alpha (đã commit hooks)
 
-Xem [`docs/oss-forks/langchain-social-agent-audit.md`](../../docs/oss-forks/langchain-social-agent-audit.md) §3.
+Sau `git clone` upstream, giữ/merge `src/lungmat/` và các patch trong repo.
 
-1. Prompts ← `../prompts/alpha-persona.md`
-2. Telegram thay Slack
-3. `webhook-out` → `alpha-content-pack.json`
-4. Không gọi Twitter/LinkedIn publish API
+**Hướng dẫn đầy đủ:** [`README.lungmat.md`](./README.lungmat.md)
 
-## Run
+```bash
+yarn lungmat:pack              # Haiku → n8n (không LangGraph)
+yarn generate_post:alpha URL   # graph + HITL → n8n
+```
+
+## Run (upstream)
 
 ```bash
 yarn langgraph:in_mem:up
-yarn generate_post
+yarn generate_post:alpha
 ```
 
 Agent Inbox: https://dev.agentinbox.ai/ — graph `generate_post`, URL `http://localhost:54367`

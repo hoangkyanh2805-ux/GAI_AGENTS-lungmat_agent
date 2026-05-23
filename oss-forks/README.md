@@ -15,13 +15,18 @@
 | [`prompts/alpha-persona.md`](./prompts/alpha-persona.md) | Persona distill (inject vào LC prompts) | F0 |
 | [`.env.alpha.example`](./.env.alpha.example) | Env mẫu Alpha | F0 |
 
+## F0 hooks (2026-05-23)
+
+`social-media-agent-lungmat/src/lungmat/` — persona, webhook-only, Haiku pack → n8n, Telegram notify.  
+Chi tiết: [`social-media-agent-lungmat/README.lungmat.md`](./social-media-agent-lungmat/README.lungmat.md)
+
 ## Clone (F0)
 
 ```bash
 cd oss-forks/social-media-agent-lungmat
 git clone https://github.com/langchain-ai/social-media-agent.git .
-cp ../../oss-forks/.env.alpha.example .env
-# yarn install && yarn langgraph:in_mem:up
+cp ../.env.alpha.example .env
+yarn install && yarn langgraph:in_mem:up
 ```
 
 ## Output contract

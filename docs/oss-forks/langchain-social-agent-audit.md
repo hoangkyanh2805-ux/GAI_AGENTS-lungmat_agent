@@ -4,7 +4,8 @@
 > **License:** MIT  
 > **Ngày:** 2026-05-22  
 > **Re-rank:** **#1 / 16** — content factory chính LungMat  
-> **Clone target:** [`oss-forks/social-media-agent-lungmat/`](../../oss-forks/social-media-agent-lungmat/)
+> **Clone target:** [`oss-forks/social-media-agent-lungmat/`](../../oss-forks/social-media-agent-lungmat/)  
+> **F0 hooks (2026-05-23):** `src/lungmat/*` — webhook-only, persona, TG notify · [`README.lungmat.md`](../../oss-forks/social-media-agent-lungmat/README.lungmat.md)
 
 ---
 

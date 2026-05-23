@@ -35,6 +35,13 @@ def _extract_json(text: str) -> dict[str, Any]:
     return json.loads(candidate[start : end + 1])
 
 
+def _clip(text: Any, limit: int) -> str:
+    value = str(text or "").strip()
+    if len(value) <= limit:
+        return value
+    return value[: limit - 3].rstrip() + "..."
+
+
 def generate_pack(topic: str, research: str) -> dict[str, Any]:
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
@@ -70,5 +77,7 @@ Sinh full Alpha content pack JSON theo system prompt. compliance.status phải P
             pack["x_thread"] = [t for t in pack["x_thread"].split("\n") if t.strip()]
         else:
             pack["x_thread"] = []
+    pack["x_thread"] = [_clip(t, 280) for t in pack.get("x_thread", [])]
+    pack["threads_post"] = _clip(pack.get("threads_post"), 500)
 
     return validate_pack(pack)

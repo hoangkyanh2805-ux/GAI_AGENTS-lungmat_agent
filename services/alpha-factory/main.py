@@ -16,6 +16,11 @@ from dotenv import load_dotenv
 from fetcher import build_research_block, fetch_headlines
 from packer import generate_pack
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 load_dotenv(Path(__file__).parent / ".env")
 
 
@@ -68,6 +73,9 @@ def main() -> int:
     url = os.getenv("N8N_WEBHOOK_URL", "").strip()
     if not url:
         print("N8N_WEBHOOK_URL missing", file=sys.stderr)
+        return 1
+    if "YOUR-N8N" in url.upper() or "your-instance" in url.lower():
+        print("N8N_WEBHOOK_URL is still a placeholder; paste the real n8n Production URL", file=sys.stderr)
         return 1
 
     print(f"POST {url}")
